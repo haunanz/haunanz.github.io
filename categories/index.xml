@@ -1,0 +1,14 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>Categories - 分类 - Haunanz</title>
+        <link>http://example.org/categories/</link>
+        <description>Categories - 分类 - Haunanz</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Sun, 30 Aug 2020 10:06:16 &#43;0800</lastBuildDate><atom:link href="http://example.org/categories/" rel="self" type="application/rss+xml" /><item>
+    <title>Go网络编程</title>
+    <link>http://example.org/categories/go%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/</link>
+    <pubDate>Sun, 30 Aug 2020 10:06:16 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>http://example.org/categories/go%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/</guid>
+    <description><![CDATA[]]></description>
+</item></channel>
+</rss>
