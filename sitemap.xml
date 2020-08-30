@@ -2,11 +2,11 @@
     xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
     xmlns:xhtml="http://www.w3.org/1999/xhtml"
     ><url>
-            <loc>http://example.org/categories/</loc><lastmod>2020-08-30T10:06:16&#43;08:00</lastmod></url><url>
-            <loc>http://example.org/categories/go%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/</loc><lastmod>2020-08-30T10:06:16&#43;08:00</lastmod></url><url>
-            <loc>http://example.org/tags/go%E8%AF%AD%E8%A8%80/</loc><lastmod>2020-08-30T10:06:16&#43;08:00</lastmod></url><url>
-            <loc>http://example.org/posts/go%E8%AF%AD%E8%A8%80linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B-%E4%BD%BF%E7%94%A8syscall/</loc><lastmod>2020-08-30T10:06:16&#43;08:00</lastmod></url><url>
-            <loc>http://example.org/</loc><lastmod>2020-08-30T10:06:16&#43;08:00</lastmod></url><url>
-            <loc>http://example.org/tags/linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/</loc><lastmod>2020-08-30T10:06:16&#43;08:00</lastmod></url><url>
-            <loc>http://example.org/posts/</loc><lastmod>2020-08-30T10:06:16&#43;08:00</lastmod></url><url>
-            <loc>http://example.org/tags/</loc><lastmod>2020-08-30T10:06:16&#43;08:00</lastmod></url></urlset>
+            <loc>https://haunanz.github.io/categories/</loc><lastmod>2020-08-30T10:06:16&#43;08:00</lastmod></url><url>
+            <loc>https://haunanz.github.io/categories/go%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/</loc><lastmod>2020-08-30T10:06:16&#43;08:00</lastmod></url><url>
+            <loc>https://haunanz.github.io/tags/go%E8%AF%AD%E8%A8%80/</loc><lastmod>2020-08-30T10:06:16&#43;08:00</lastmod></url><url>
+            <loc>https://haunanz.github.io/posts/go%E8%AF%AD%E8%A8%80linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B-%E4%BD%BF%E7%94%A8syscall/</loc><lastmod>2020-08-30T10:06:16&#43;08:00</lastmod></url><url>
+            <loc>https://haunanz.github.io/</loc><lastmod>2020-08-30T10:06:16&#43;08:00</lastmod></url><url>
+            <loc>https://haunanz.github.io/tags/linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/</loc><lastmod>2020-08-30T10:06:16&#43;08:00</lastmod></url><url>
+            <loc>https://haunanz.github.io/posts/</loc><lastmod>2020-08-30T10:06:16&#43;08:00</lastmod></url><url>
+            <loc>https://haunanz.github.io/tags/</loc><lastmod>2020-08-30T10:06:16&#43;08:00</lastmod></url></urlset>
