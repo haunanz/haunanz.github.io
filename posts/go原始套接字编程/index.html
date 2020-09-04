@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>Go原始套接字编程 - Haunanz</title><meta name="Description" content=""><meta property="og:title" content="Go原始套接字编程" />
+<meta property="og:description" content="引言 请注意，本文档的运行环境是Linux。 在Windows环境下注意系统调用的接口有差别。 两个计算机如何在网络中定位彼此的位置呢？计算机中的" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://haunanz.github.io/posts/go%E5%8E%9F%E5%A7%8B%E5%A5%97%E6%8E%A5%E5%AD%97%E7%BC%96%E7%A8%8B/" />
+<meta property="article:published_time" content="2020-09-01T21:56:19+08:00" />
+<meta property="article:modified_time" content="2020-09-01T21:56:19+08:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Go原始套接字编程"/>
+<meta name="twitter:description" content="引言 请注意，本文档的运行环境是Linux。 在Windows环境下注意系统调用的接口有差别。 两个计算机如何在网络中定位彼此的位置呢？计算机中的"/>
+<meta name="application-name" content="Haunanz">
+<meta name="apple-mobile-web-app-title" content="Haunanz"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://haunanz.github.io/posts/go%E5%8E%9F%E5%A7%8B%E5%A5%97%E6%8E%A5%E5%AD%97%E7%BC%96%E7%A8%8B/" /><link rel="prev" href="https://haunanz.github.io/posts/go%E8%AF%AD%E8%A8%80linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B-%E4%BD%BF%E7%94%A8syscall/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"><link rel="stylesheet" href="/lib/animate/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "Go原始套接字编程",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/haunanz.github.io\/posts\/go%E5%8E%9F%E5%A7%8B%E5%A5%97%E6%8E%A5%E5%AD%97%E7%BC%96%E7%A8%8B\/"
+        },"genre": "posts","keywords": "Go语言, 网络编程","wordcount":  1927 ,
+        "url": "https:\/\/haunanz.github.io\/posts\/go%E5%8E%9F%E5%A7%8B%E5%A5%97%E6%8E%A5%E5%AD%97%E7%BC%96%E7%A8%8B\/","datePublished": "2020-09-01T21:56:19+08:00","dateModified": "2020-09-01T21:56:19+08:00","publisher": {
+            "@type": "Organization",
+            "name": "haunanz"},"author": {
+                "@type": "Person",
+                "name": "haunanz"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="" header-mobile=""><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : '' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="Haunanz">Haunanz</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="https://github.com/haunanz" rel="noopener noreffer" target="_blank"><i class="fab fa-github-alt fa-fw"></i>  </a><span class="menu-item delimiter"></span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="Haunanz">Haunanz</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><a class="menu-item" href="/posts/" title="">文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="https://github.com/haunanz" title="" rel="noopener noreffer" target="_blank"><i class="fab fa-github-alt fa-fw"></i></a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">Go原始套接字编程</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://github.com/haunanz" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>haunanz</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/go%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/"><i class="far fa-folder fa-fw"></i>Go网络编程</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-09-01">2020-09-01</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 1927 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 4 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#引言">引言</a></li>
+    <li><a href="#socket-向系统申请一个套接字">Socket 向系统申请一个套接字</a>
+      <ul>
+        <li><a href="#syscallsocket">syscall.Socket</a></li>
+        <li><a href="#协议类型">协议类型</a></li>
+      </ul>
+    </li>
+    <li><a href="#bind-将套接字地址和描述符绑定">Bind 将套接字地址和描述符绑定</a>
+      <ul>
+        <li><a href="#创建套接字的地址">创建套接字的地址</a></li>
+        <li><a href="#syscallbind">syscall.Bind</a></li>
+      </ul>
+    </li>
+    <li><a href="#listen-监听端口">Listen 监听端口</a></li>
+    <li><a href="#accept-接收并建立连接">Accept 接收并建立连接</a></li>
+    <li><a href="#connect-主动连接某个端口">Connect 主动连接某个端口</a></li>
+    <li><a href="#read--write-传输字节流">Read &amp; Write 传输字节流</a></li>
+    <li><a href="#recfromsendto-与readwrite的区别">RecFrom&amp;SendTo 与Read&amp;Write的区别</a></li>
+    <li><a href="#shoutdown--close">Shoutdown &amp; Close</a></li>
+    <li><a href="#服务端示例-echo服务">服务端示例 Echo服务</a></li>
+    <li><a href="#客户端示例-标准输入输出">客户端示例 标准输入输出</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><h2 id="引言">引言</h2>
+<pre><code>请注意，本文档的运行环境是Linux。  
+在Windows环境下注意系统调用的接口有差别。
+</code></pre><p>两个计算机如何在网络中定位彼此的位置呢？计算机中的进程如何在网络中定位和自己对话的进程呢？
+通过套接字就可以唯一定位两个通信的进程。<br>
+套接字一般来说就是： IP地址 + 端口号。<br>
+IP地址唯一确定计算机的地址，端口号唯一确定计算机中的一个进程。
+IPv4约有40亿个地址。每个计算机系统的端口号从0-65535。（当然可以通过配置网卡来获得多个地址，但每个地址接口的上限都是65535）</p>
+<p>套接字由操作系统提供和维护，当程序向系统申请时，系统会返回一个文件描述符。通过这个描述符就可以进行通信相关的一系列操作。</p>
+<p>一般来说，使用套接字进行通信时，由一方扮演服务方，另一方扮演客户方。<br>
+服务方往往通过监听端口被动的接收连接，通过单个端口可以服务成千上万个连接。<br>
+客户方往往主动发起连接请求，每个连接都要消耗一个系统的端口号。</p>
+<h2 id="socket-向系统申请一个套接字">Socket 向系统申请一个套接字</h2>
+<p>申请套接字的这一步操作是为了让系统根据你设置的<strong>协议类型</strong>对套接字进行相应的初始化。<br>
+进行这个操作后，系统将会为你分配一个套接字，返回给你一个文件描述符。你可以使用这个文件描述符操作这个套接字。</p>
+<h3 id="syscallsocket">syscall.Socket</h3>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">Socket</span><span class="p">(</span><span class="nx">domain</span><span class="p">,</span> <span class="nx">typ</span><span class="p">,</span> <span class="nx">proto</span> <span class="kt">int</span><span class="p">)</span> <span class="p">(</span><span class="nx">fd</span> <span class="kt">int</span><span class="p">,</span> <span class="nx">err</span> <span class="kt">error</span><span class="p">)</span>
+</code></pre></div><h3 id="协议类型">协议类型</h3>
+<p>要注意的是，我们往往是和TCP协议打交道的，所以往往只使用<br>
+//TODO</p>
+<h2 id="bind-将套接字地址和描述符绑定">Bind 将套接字地址和描述符绑定</h2>
+<p>向系统申请了套接字，那么套接字指向那个网络中的（本地）地址呢？<br>
+这取决于你绑定的地址。<br>
+这一步创建并绑定到套接字上。</p>
+<h3 id="创建套接字的地址">创建套接字的地址</h3>
+<p>源码：$GOROOT/src/syscall/syscall_unix.go</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// 官方定义的套接字接口
+</span><span class="c1">// 不用管具体的函数实现 这个由官方维护
+</span><span class="c1"></span><span class="kd">type</span> <span class="nx">Sockaddr</span> <span class="kd">interface</span> <span class="p">{</span>
+	<span class="nf">sockaddr</span><span class="p">()</span> <span class="p">(</span><span class="nx">ptr</span> <span class="nx">unsafe</span><span class="p">.</span><span class="nx">Pointer</span><span class="p">,</span> <span class="nx">len</span> <span class="nx">_Socklen</span><span class="p">,</span> <span class="nx">err</span> <span class="kt">error</span><span class="p">)</span> <span class="c1">// lowercase; only we can define Sockaddrs
+</span><span class="c1"></span><span class="p">}</span>
+
+<span class="c1">// IPv4的套接字结构体
+</span><span class="c1"></span><span class="kd">type</span> <span class="nx">SockaddrInet4</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">Port</span> <span class="kt">int</span>
+	<span class="nx">Addr</span> <span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="kt">byte</span>
+	<span class="nx">raw</span>  <span class="nx">RawSockaddrInet4</span>
+<span class="p">}</span>
+</code></pre></div><p>可以直接创建<strong>SocketaddrInet4</strong>机构体，并初始化接口<strong>Port</strong>。
+创建套接字的流程，使用内置函数<strong>copy()和net.ParseIP()<strong>来初始化</strong>SockaddrInet4.Addr</strong>。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="nx">addr</span> <span class="o">:=</span> <span class="nx">syscall</span><span class="p">.</span><span class="nx">SockaddrInet4</span><span class="p">{</span><span class="nx">Port</span><span class="p">:</span> <span class="mi">8080</span><span class="p">}</span>
+<span class="nb">copy</span><span class="p">(</span><span class="nx">addr</span><span class="p">.</span><span class="nx">Addr</span><span class="p">[:],</span> <span class="nx">net</span><span class="p">.</span><span class="nf">ParseIP</span><span class="p">(</span><span class="s">&#34;0.0.0.0&#34;</span><span class="p">).</span><span class="nf">To4</span><span class="p">())</span>
+</code></pre></div><h3 id="syscallbind">syscall.Bind</h3>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">Bind</span><span class="p">(</span><span class="nx">fd</span> <span class="kt">int</span><span class="p">,</span> <span class="nx">sa</span> <span class="nx">Sockaddr</span><span class="p">)</span> <span class="p">(</span><span class="nx">err</span> <span class="kt">error</span><span class="p">)</span> 
+</code></pre></div><ul>
+<li><strong>fd</strong> 套接字的文件描述符</li>
+<li><strong>sa</strong> Sockaddr接口</li>
+</ul>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// 使用Bind的流程
+</span><span class="c1"></span><span class="nx">err</span> <span class="p">=</span> <span class="nx">syscall</span><span class="p">.</span><span class="nf">Bind</span><span class="p">(</span><span class="nx">serverfd</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">addr</span><span class="p">)</span>
+<span class="nf">doErr</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+</code></pre></div><h2 id="listen-监听端口">Listen 监听端口</h2>
+<p>服务器如何知晓外部想和自己建立连接呢？<br>
+通过监听对应的端口。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">Listen</span><span class="p">(</span><span class="nx">s</span> <span class="kt">int</span><span class="p">,</span> <span class="nx">n</span> <span class="kt">int</span><span class="p">)</span> <span class="p">(</span><span class="nx">err</span> <span class="kt">error</span><span class="p">)</span>
+</code></pre></div><ul>
+<li><strong>s</strong> 是一个绑定后的套接字和</li>
+<li><strong>n</strong> 是接收队列的最大长度。
+如果连接数达到这个值，往后的请求将被直接拒绝。
+比如设为 5，那么待处理的连接请求最多会有5个被储存在缓冲队列中。
+知道使用Accept接收。
+也可以使用常量 SOMAXCONN，这将由系统决定队列的最大长度</li>
+</ul>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// 使用监听的流程
+</span><span class="c1"></span><span class="nx">err</span> <span class="p">=</span> <span class="nx">syscall</span><span class="p">.</span><span class="nf">Listen</span><span class="p">(</span><span class="nx">serverfd</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="nf">doErr</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+</code></pre></div><h2 id="accept-接收并建立连接">Accept 接收并建立连接</h2>
+<p>通过监听，我们知道-有外部连接请求。如何描述对方呢？换句话说，如果我们接收了很多连接请求，如何区分这些连接呢？<br>
+我们想操作这些连接如何指定对象呢？<br>
+答案是套接字！和监听套接字一样的套接字。<br>
+还记得我们在文章开始说过吗：<strong>IP地址：端口</strong> 唯一确定在网络中的主机上运行的一个进程。<br>
+那么如何获得这个套接字呢？ Accept
+其实自己也可以创建，但是操作系统帮我们处理了很多底层的东西，降低了实现网络通信的的复杂度。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">Accept</span><span class="p">(</span><span class="nx">fd</span> <span class="kt">int</span><span class="p">)</span> <span class="p">(</span><span class="nx">nfd</span> <span class="kt">int</span><span class="p">,</span> <span class="nx">sa</span> <span class="nx">Sockaddr</span><span class="p">,</span> <span class="nx">err</span> <span class="kt">error</span><span class="p">)</span>
+</code></pre></div><ul>
+<li><strong>fd</strong> 套接字的文件描述符，这个套接字经过了<em>Bind</em>和<em>Listen</em>。</li>
+<li><strong>nfd</strong>  已经建立的连接的套接字文件描述符，以下称<strong>连接的文件描述符</strong>，可以使用这个套接字和外部链接通信。</li>
+<li><strong>sa</strong>  已经建立的连接的信息。</li>
+</ul>
+<h2 id="connect-主动连接某个端口">Connect 主动连接某个端口</h2>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">Connect</span><span class="p">(</span><span class="nx">fd</span> <span class="kt">int</span><span class="p">,</span> <span class="nx">sa</span> <span class="nx">Sockaddr</span><span class="p">)</span> <span class="p">(</span><span class="nx">err</span> <span class="kt">error</span><span class="p">)</span>
+</code></pre></div><h2 id="read--write-传输字节流">Read &amp; Write 传输字节流</h2>
+<p>除了建立断开连接，那无外乎就是网络数据的读写了。读取请求，处理请求，返回处理结果。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">Read</span><span class="p">(</span><span class="nx">fd</span> <span class="kt">int</span><span class="p">,</span> <span class="nx">p</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">)</span> <span class="p">(</span><span class="nx">n</span> <span class="kt">int</span><span class="p">,</span> <span class="nx">err</span> <span class="kt">error</span><span class="p">)</span>
+<span class="kd">func</span> <span class="nf">Write</span><span class="p">(</span><span class="nx">fd</span> <span class="kt">int</span><span class="p">,</span> <span class="nx">p</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">)</span> <span class="p">(</span><span class="nx">n</span> <span class="kt">int</span><span class="p">,</span> <span class="nx">err</span> <span class="kt">error</span><span class="p">)</span>
+</code></pre></div><ul>
+<li><strong>fd</strong> 连接的文件描述符</li>
+<li><strong>p</strong> 缓冲区</li>
+</ul>
+<h2 id="recfromsendto-与readwrite的区别">RecFrom&amp;SendTo 与Read&amp;Write的区别</h2>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">Recvfrom</span><span class="p">(</span><span class="nx">fd</span> <span class="kt">int</span><span class="p">,</span> <span class="nx">p</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">,</span> <span class="nx">flags</span> <span class="kt">int</span><span class="p">)</span> <span class="p">(</span><span class="nx">n</span> <span class="kt">int</span><span class="p">,</span> <span class="nx">from</span> <span class="nx">Sockaddr</span><span class="p">,</span> <span class="nx">err</span> <span class="kt">error</span><span class="p">)</span>
+<span class="kd">func</span> <span class="nf">Sendto</span><span class="p">(</span><span class="nx">fd</span> <span class="kt">int</span><span class="p">,</span> <span class="nx">p</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">,</span> <span class="nx">flags</span> <span class="kt">int</span><span class="p">,</span> <span class="nx">to</span> <span class="nx">Sockaddr</span><span class="p">)</span> <span class="p">(</span><span class="nx">err</span> <span class="kt">error</span><span class="p">)</span>
+</code></pre></div><h2 id="shoutdown--close">Shoutdown &amp; Close</h2>
+<p>这里有两种关闭连接的方法。一种是<code>Close</code>另一种是<code>Shoutdown</code>。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">Close</span><span class="p">(</span><span class="nx">fd</span> <span class="kt">int</span><span class="p">)</span> <span class="p">(</span><span class="nx">err</span> <span class="kt">error</span><span class="p">)</span>
+<span class="kd">func</span> <span class="nf">Shutdown</span><span class="p">(</span><span class="nx">fd</span> <span class="kt">int</span><span class="p">,</span> <span class="nx">how</span> <span class="kt">int</span><span class="p">)</span> <span class="p">(</span><span class="nx">err</span> <span class="kt">error</span><span class="p">)</span>
+</code></pre></div><p>两者有何区别呢？<br>
+<code>Close</code>减少一个文件描述符的指向，当文件描述符的指向为0时关闭。<br>
+一般正在多进程程序设计时才会考虑这个问题。一般情况下不用管。</p>
+<p><code>Shoutdown</code>会结合<code>how</code>一个flag来确定关闭方式.
+| how         | value | descript             |
+| &mdash;&mdash;&mdash;&ndash; | &mdash;&ndash; | &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&ndash; |
+| SHUT_RD：   | 值为0 | 关闭连接的读。       |
+| 2.SHUT_WR   | 值为1 | 关闭连接的写。       |
+| 3.SHUT_RDWR | 值为2 | 连接的读和写都关闭。 |</p>
+<h2 id="服务端示例-echo服务">服务端示例 Echo服务</h2>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">main</span>
+
+<span class="kn">import</span> <span class="p">(</span>
+	<span class="s">&#34;net&#34;</span>
+	<span class="s">&#34;syscall&#34;</span>
+<span class="p">)</span>
+
+<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">serverfd</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">syscall</span><span class="p">.</span><span class="nf">Socket</span><span class="p">(</span><span class="nx">syscall</span><span class="p">.</span><span class="nx">AF_INET</span><span class="p">,</span> <span class="nx">syscall</span><span class="p">.</span><span class="nx">SOCK_STREAM</span><span class="p">,</span> <span class="nx">syscall</span><span class="p">.</span><span class="nx">IPPROTO_TCP</span><span class="p">)</span>
+	<span class="nf">doErr</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+	<span class="k">defer</span> <span class="nx">syscall</span><span class="p">.</span><span class="nf">Close</span><span class="p">(</span><span class="nx">serverfd</span><span class="p">)</span>
+
+	<span class="nx">addr</span> <span class="o">:=</span> <span class="nx">syscall</span><span class="p">.</span><span class="nx">SockaddrInet4</span><span class="p">{</span><span class="nx">Port</span><span class="p">:</span> <span class="mi">8080</span><span class="p">}</span>
+	<span class="nb">copy</span><span class="p">(</span><span class="nx">addr</span><span class="p">.</span><span class="nx">Addr</span><span class="p">[:],</span> <span class="nx">net</span><span class="p">.</span><span class="nf">ParseIP</span><span class="p">(</span><span class="s">&#34;0.0.0.0&#34;</span><span class="p">).</span><span class="nf">To4</span><span class="p">())</span>
+
+	<span class="nx">err</span> <span class="p">=</span> <span class="nx">syscall</span><span class="p">.</span><span class="nf">Bind</span><span class="p">(</span><span class="nx">serverfd</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">addr</span><span class="p">)</span>
+	<span class="nf">doErr</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+	<span class="nx">err</span> <span class="p">=</span> <span class="nx">syscall</span><span class="p">.</span><span class="nf">Listen</span><span class="p">(</span><span class="nx">serverfd</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+	<span class="nf">doErr</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+
+	<span class="k">for</span> <span class="p">{</span>
+		<span class="nx">clientfd</span><span class="p">,</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">syscall</span><span class="p">.</span><span class="nf">Accept</span><span class="p">(</span><span class="nx">serverfd</span><span class="p">)</span>
+		<span class="nf">doErr</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+		<span class="kd">var</span> <span class="nx">buf</span> <span class="p">[</span><span class="mi">1024</span><span class="p">]</span><span class="kt">byte</span>
+		<span class="nx">n</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">syscall</span><span class="p">.</span><span class="nf">Read</span><span class="p">(</span><span class="nx">clientfd</span><span class="p">,</span> <span class="nx">buf</span><span class="p">[:])</span>
+		<span class="nf">doErr</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+		<span class="c1">// if n==0 {
+</span><span class="c1"></span>
+		<span class="c1">// }
+</span><span class="c1"></span>		<span class="nx">n</span><span class="p">,</span> <span class="nx">err</span> <span class="p">=</span> <span class="nx">syscall</span><span class="p">.</span><span class="nf">Write</span><span class="p">(</span><span class="nx">clientfd</span><span class="p">,</span> <span class="nx">buf</span><span class="p">[:</span><span class="nx">n</span><span class="p">])</span>
+		<span class="nx">syscall</span><span class="p">.</span><span class="nf">Close</span><span class="p">(</span><span class="nx">clientfd</span><span class="p">)</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">doErr</span><span class="p">(</span><span class="nx">err</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nb">panic</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div><h2 id="客户端示例-标准输入输出">客户端示例 标准输入输出</h2>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">main</span>
+
+<span class="kn">import</span> <span class="p">(</span>
+	<span class="s">&#34;fmt&#34;</span>
+	<span class="s">&#34;net&#34;</span>
+	<span class="s">&#34;syscall&#34;</span>
+<span class="p">)</span>
+
+<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">fd</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">syscall</span><span class="p">.</span><span class="nf">Socket</span><span class="p">(</span><span class="nx">syscall</span><span class="p">.</span><span class="nx">AF_INET</span><span class="p">,</span> <span class="nx">syscall</span><span class="p">.</span><span class="nx">SOCK_STREAM</span><span class="p">,</span> <span class="nx">syscall</span><span class="p">.</span><span class="nx">IPPROTO_TCP</span><span class="p">)</span>
+	<span class="nf">doErr</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+	<span class="k">defer</span> <span class="nx">syscall</span><span class="p">.</span><span class="nf">Close</span><span class="p">(</span><span class="nx">fd</span><span class="p">)</span>
+
+	<span class="nx">addr</span> <span class="o">:=</span> <span class="nx">syscall</span><span class="p">.</span><span class="nx">SockaddrInet4</span><span class="p">{</span><span class="nx">Port</span><span class="p">:</span> <span class="mi">8080</span><span class="p">}</span>
+	<span class="nb">copy</span><span class="p">(</span><span class="nx">addr</span><span class="p">.</span><span class="nx">Addr</span><span class="p">[:],</span> <span class="nx">net</span><span class="p">.</span><span class="nf">ParseIP</span><span class="p">(</span><span class="s">&#34;0.0.0.0&#34;</span><span class="p">).</span><span class="nf">To4</span><span class="p">())</span>
+
+	<span class="nx">err</span> <span class="p">=</span> <span class="nx">syscall</span><span class="p">.</span><span class="nf">Connect</span><span class="p">(</span><span class="nx">fd</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">addr</span><span class="p">)</span>
+	<span class="nf">doErr</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+
+	<span class="nx">str</span> <span class="o">:=</span> <span class="s">&#34;&#34;</span>
+	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Scanf</span><span class="p">(</span><span class="s">&#34;%s&#34;</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">str</span><span class="p">)</span>
+
+	<span class="nx">n</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">syscall</span><span class="p">.</span><span class="nf">Write</span><span class="p">(</span><span class="nx">fd</span><span class="p">,</span> <span class="p">[]</span><span class="nb">byte</span><span class="p">(</span><span class="nx">str</span><span class="p">))</span>
+	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;%d byte to Send\n&#34;</span><span class="p">,</span> <span class="nx">n</span><span class="p">)</span>
+
+	<span class="kd">var</span> <span class="nx">buf</span> <span class="p">[</span><span class="mi">1024</span><span class="p">]</span><span class="kt">byte</span>
+	<span class="nx">n</span><span class="p">,</span> <span class="nx">err</span> <span class="p">=</span> <span class="nx">syscall</span><span class="p">.</span><span class="nf">Read</span><span class="p">(</span><span class="nx">fd</span><span class="p">,</span> <span class="nx">buf</span><span class="p">[:])</span>
+	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;%d byte to recive\nContent:%s\n&#34;</span><span class="p">,</span> <span class="nx">n</span><span class="p">,</span> <span class="nb">string</span><span class="p">(</span><span class="nx">buf</span><span class="p">[:</span><span class="nx">n</span><span class="p">]))</span>
+
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">doErr</span><span class="p">(</span><span class="nx">err</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nb">panic</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div><h2 id="参考">参考</h2>
+<p>[1]. <a href="https://blog.csdn.net/lgp88/article/details/7176509" target="_blank" rel="noopener noreffer">linux网络编程之shutdown() 与 close()函数详解</a><br>
+[2] <a href="https://www.jianshu.com/p/111adfe8c686" target="_blank" rel="noopener noreffer">旅行之间 . Linux 网络编程基础</a></p>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2020-09-01</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"></div>
+            <div class="post-info-share">
+                <span></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/go%E8%AF%AD%E8%A8%80/">Go语言</a>,&nbsp;<a href="/tags/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/">网络编程</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/posts/go%E8%AF%AD%E8%A8%80linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B-%E4%BD%BF%E7%94%A8syscall/" class="prev" rel="prev" title="Go语言Linux网络编程-使用原始套接字 "><i class="fas fa-angle-left fa-fw"></i>Go语言Linux网络编程-使用原始套接字 </a></div>
+</div>
+</article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.74.3">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2020</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://github.com/haunanz" target="_blank">haunanz</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="/lib/smooth-scroll/smooth-scroll.min.js"></script><script type="text/javascript" src="/lib/lazysizes/lazysizes.min.js"></script><script type="text/javascript" src="/lib/clipboard/clipboard.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":-1},"comment":{}};</script><script type="text/javascript" src="/js/theme.min.js"></script></body>
+</html>
