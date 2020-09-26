@@ -17,7 +17,7 @@
 <meta name="application-name" content="Haunanz">
 <meta name="apple-mobile-web-app-title" content="Haunanz"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://haunanz.github.io/posts/go%E5%8E%9F%E5%A7%8B%E5%A5%97%E6%8E%A5%E5%AD%97%E7%BC%96%E7%A8%8B/" /><link rel="prev" href="https://haunanz.github.io/posts/go%E8%AF%AD%E8%A8%80linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B-%E4%BD%BF%E7%94%A8syscall/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"><link rel="stylesheet" href="/lib/animate/animate.min.css"><script type="application/ld+json">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://haunanz.github.io/posts/go%E5%8E%9F%E5%A7%8B%E5%A5%97%E6%8E%A5%E5%AD%97%E7%BC%96%E7%A8%8B/" /><link rel="prev" href="https://haunanz.github.io/posts/go%E8%AF%AD%E8%A8%80linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B-%E4%BD%BF%E7%94%A8syscall/" /><link rel="next" href="https://haunanz.github.io/posts/go%E7%AC%94%E8%AE%B0-%E5%88%87%E7%89%87%E6%88%AA%E6%96%AD%E5%AF%BC%E8%87%B4%E5%86%85%E5%AD%98%E4%B8%8D%E8%83%BD%E9%87%8A%E6%94%BE/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"><link rel="stylesheet" href="/lib/animate/animate.min.css"><script type="application/ld+json">
     {
         "@context": "http://schema.org",
         "@type": "BlogPosting",
@@ -26,7 +26,7 @@
         "mainEntityOfPage": {
             "@type": "WebPage",
             "@id": "https:\/\/haunanz.github.io\/posts\/go%E5%8E%9F%E5%A7%8B%E5%A5%97%E6%8E%A5%E5%AD%97%E7%BC%96%E7%A8%8B\/"
-        },"genre": "posts","keywords": "Go语言, 网络编程","wordcount":  1995 ,
+        },"genre": "posts","keywords": "Go语言, 网络编程","wordcount":  2017 ,
         "url": "https:\/\/haunanz.github.io\/posts\/go%E5%8E%9F%E5%A7%8B%E5%A5%97%E6%8E%A5%E5%AD%97%E7%BC%96%E7%A8%8B\/","datePublished": "2020-09-01T21:56:19+08:00","dateModified": "2020-09-01T21:56:19+08:00","publisher": {
             "@type": "Organization",
             "name": "haunanz"},"author": {
@@ -76,8 +76,8 @@
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">Go原始套接字编程</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="https://github.com/haunanz" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>haunanz</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/go%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/"><i class="far fa-folder fa-fw"></i>Go网络编程</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-09-01">2020-09-01</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 1995 字&nbsp;
-                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 4 分钟&nbsp;</div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-09-01">2020-09-01</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 2017 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 5 分钟&nbsp;</div>
         </div><div class="details toc" id="toc-static"  kept="">
                 <div class="details-summary toc-title">
                     <span>目录</span>
@@ -91,6 +91,7 @@
         <li><a href="#syscallsocket">syscall.Socket</a></li>
         <li><a href="#地址族">地址族</a></li>
         <li><a href="#套接字类型">套接字类型</a></li>
+        <li><a href="#协议类型">协议类型</a></li>
       </ul>
     </li>
     <li><a href="#bind-将套接字地址和描述符绑定">Bind 将套接字地址和描述符绑定</a>
@@ -175,6 +176,25 @@ IPv4约有40亿个地址。每个计算机系统的端口号从0-65535。（当�
 <tr>
 <td>SOCK_RAW</td>
 <td>原始套接字，用于IP，ICMP等更加底层的协议</td>
+</tr>
+</tbody>
+</table>
+<h3 id="协议类型">协议类型</h3>
+<table>
+<thead>
+<tr>
+<th>协议类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IPPROTO_TCP</td>
+<td>TCP协议</td>
+</tr>
+<tr>
+<td>IPPROTO_UDP</td>
+<td>UDP协议</td>
 </tr>
 </tbody>
 </table>
@@ -389,7 +409,8 @@ IPv4约有40亿个地址。每个计算机系统的端口号从0-65535。（当�
         </section>
     </div>
 
-    <div class="post-nav"><a href="/posts/go%E8%AF%AD%E8%A8%80linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B-%E4%BD%BF%E7%94%A8syscall/" class="prev" rel="prev" title="Go语言Linux网络编程-使用原始套接字 "><i class="fas fa-angle-left fa-fw"></i>Go语言Linux网络编程-使用原始套接字 </a></div>
+    <div class="post-nav"><a href="/posts/go%E8%AF%AD%E8%A8%80linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B-%E4%BD%BF%E7%94%A8syscall/" class="prev" rel="prev" title="Go语言Linux网络编程-使用原始套接字 "><i class="fas fa-angle-left fa-fw"></i>Go语言Linux网络编程-使用原始套接字 </a>
+            <a href="/posts/go%E7%AC%94%E8%AE%B0-%E5%88%87%E7%89%87%E6%88%AA%E6%96%AD%E5%AF%BC%E8%87%B4%E5%86%85%E5%AD%98%E4%B8%8D%E8%83%BD%E9%87%8A%E6%94%BE/" class="next" rel="next" title="Go笔记 切片截断导致内存不能释放">Go笔记 切片截断导致内存不能释放<i class="fas fa-angle-right fa-fw"></i></a></div>
 </div>
 </article></div>
             </main><footer class="footer">
