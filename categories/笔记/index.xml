@@ -1,0 +1,14 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>笔记 - 分类 - Haunanz</title>
+        <link>https://haunanz.github.io/categories/%E7%AC%94%E8%AE%B0/</link>
+        <description>笔记 - 分类 - Haunanz</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Wed, 21 Oct 2020 22:48:38 &#43;0800</lastBuildDate><atom:link href="https://haunanz.github.io/categories/%E7%AC%94%E8%AE%B0/" rel="self" type="application/rss+xml" /><item>
+    <title>为什么使用动态内存</title>
+    <link>https://haunanz.github.io/posts/note/1-%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BD%BF%E7%94%A8%E5%8A%A8%E6%80%81%E5%86%85%E5%AD%98/</link>
+    <pubDate>Wed, 21 Oct 2020 22:48:38 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://haunanz.github.io/posts/note/1-%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BD%BF%E7%94%A8%E5%8A%A8%E6%80%81%E5%86%85%E5%AD%98/</guid>
+    <description><![CDATA[如果在编码时就可以确定作用域和所需内存大小，那么动态内存就没有必要使用。 但是在实际的生产中，对于复杂的系统来说，内存的大小总是不可估计的。 下]]></description>
+</item></channel>
+</rss>
