@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>Go语言Linux网络编程-使用原始套接字  - Haunanz</title><meta name="Description" content=""><meta property="og:title" content="Go语言Linux网络编程-使用原始套接字 " />
+<meta property="og:description" content="Go语言直接使用原始套接字编写网络程序。 想使用Go学习网络编程，但大多是教程都是从套接字开始讲起。但是GO提供了net包，屏蔽了底层的复杂性" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://haunanz.github.io/posts/2020.9/go%E8%AF%AD%E8%A8%80linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B-%E4%BD%BF%E7%94%A8syscall/" />
+<meta property="article:published_time" content="2020-08-30T10:06:16+08:00" />
+<meta property="article:modified_time" content="2020-08-30T10:06:16+08:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Go语言Linux网络编程-使用原始套接字 "/>
+<meta name="twitter:description" content="Go语言直接使用原始套接字编写网络程序。 想使用Go学习网络编程，但大多是教程都是从套接字开始讲起。但是GO提供了net包，屏蔽了底层的复杂性"/>
+<meta name="application-name" content="Haunanz">
+<meta name="apple-mobile-web-app-title" content="Haunanz"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://haunanz.github.io/posts/2020.9/go%E8%AF%AD%E8%A8%80linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B-%E4%BD%BF%E7%94%A8syscall/" /><link rel="next" href="https://haunanz.github.io/posts/2020.9/go%E5%8E%9F%E5%A7%8B%E5%A5%97%E6%8E%A5%E5%AD%97%E7%BC%96%E7%A8%8B/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"><link rel="stylesheet" href="/lib/animate/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "Go语言Linux网络编程-使用原始套接字 ",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/haunanz.github.io\/posts\/2020.9\/go%E8%AF%AD%E8%A8%80linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B-%E4%BD%BF%E7%94%A8syscall\/"
+        },"genre": "posts","keywords": "Go语言, 网络编程","wordcount":  968 ,
+        "url": "https:\/\/haunanz.github.io\/posts\/2020.9\/go%E8%AF%AD%E8%A8%80linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B-%E4%BD%BF%E7%94%A8syscall\/","datePublished": "2020-08-30T10:06:16+08:00","dateModified": "2020-08-30T10:06:16+08:00","publisher": {
+            "@type": "Organization",
+            "name": "haunanz"},"author": {
+                "@type": "Person",
+                "name": "haunanz"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="" header-mobile=""><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : '' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="Haunanz">Haunanz</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="https://github.com/haunanz" rel="noopener noreffer" target="_blank"><i class="fab fa-github-alt fa-fw"></i>  </a><span class="menu-item delimiter"></span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="Haunanz">Haunanz</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><a class="menu-item" href="/posts/" title="">文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="https://github.com/haunanz" title="" rel="noopener noreffer" target="_blank"><i class="fab fa-github-alt fa-fw"></i></a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">Go语言Linux网络编程-使用原始套接字 </h1><h2 class="single-subtitle">使用syscall</h2><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://github.com/haunanz" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>haunanz</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/go%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/"><i class="far fa-folder fa-fw"></i>Go网络编程</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-08-30">2020-08-30</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 968 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 2 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#syscall">syscall</a></li>
+    <li><a href="#一个简单的echo服务">一个简单的echo服务</a></li>
+    <li><a href="#总结">总结</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p>Go语言直接使用原始套接字编写网络程序。<br>
+想使用Go学习网络编程，但大多是教程都是从套接字开始讲起。但是GO提供了net包，屏蔽了底层的复杂性，让初学者不知到如何下手。<br>
+个人认为了解套接字编程还是有一定的必要的，虽然工作中都是使用现成的网络阔。<br>
+如果想编写自己的网络库，那么就必须得和原始套接字打交道了。</p>
+<h2 id="syscall">syscall</h2>
+<p>来看一下C语言版的套接字接口和Go语言版的套接字接口的对应。</p>
+<p>c语言版本的接口。</p>
+<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="kt">int</span> <span class="nf">socket</span><span class="p">(</span><span class="kt">int</span> <span class="n">domain</span><span class="p">,</span> <span class="kt">int</span> <span class="n">type</span><span class="p">,</span> <span class="kt">int</span> <span class="n">protocol</span><span class="p">);</span>
+<span class="kt">int</span> <span class="nf">bind</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="k">const</span> <span class="k">struct</span> <span class="n">sockaddr</span> <span class="o">*</span> <span class="n">addr</span><span class="p">,</span> <span class="n">socklen_t</span> <span class="n">addr_len</span><span class="p">);</span>
+<span class="kt">int</span> <span class="nf">listen</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="kt">int</span> <span class="n">n</span><span class="p">);</span>
+<span class="kt">int</span> <span class="nf">accept</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="k">struct</span> <span class="n">sockaddr</span> <span class="o">*</span> <span class="n">addr</span><span class="p">,</span> <span class="n">socklen_t</span> <span class="o">*</span> <span class="n">addr_len</span><span class="p">);</span>
+<span class="kt">int</span> <span class="nf">connect</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="k">const</span> <span class="k">struct</span> <span class="n">sockaddr</span> <span class="o">*</span> <span class="n">addr</span><span class="p">,</span> <span class="n">socklen_t</span> <span class="n">addr_len</span><span class="p">);</span>
+<span class="n">ssize_t</span> <span class="nf">recv</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="n">buf</span><span class="p">,</span> <span class="n">size_t</span> <span class="n">n</span><span class="p">,</span> <span class="kt">int</span> <span class="n">flags</span><span class="p">);</span>
+<span class="n">ssize_t</span> <span class="nf">send</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="n">buf</span><span class="p">,</span> <span class="n">size_t</span> <span class="n">n</span><span class="p">,</span> <span class="kt">int</span> <span class="n">flags</span><span class="p">);</span>
+<span class="kt">int</span> <span class="nf">close</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">);</span>
+<span class="kt">int</span> <span class="nf">shutdown</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="kt">int</span> <span class="n">howto</span><span class="p">);</span>
+</code></pre></div><p>go语言版本的接口。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="nx">syscall</span><span class="p">.</span><span class="nf">Socket</span><span class="p">()</span>
+<span class="nx">syscall</span><span class="p">.</span><span class="nf">Bind</span><span class="p">()</span>
+<span class="nx">syscall</span><span class="p">.</span><span class="nf">SetNonblock</span><span class="p">()</span>
+<span class="nx">syscall</span><span class="p">.</span><span class="nf">Listen</span><span class="p">()</span>
+<span class="nx">syscall</span><span class="p">.</span><span class="nf">Accept</span><span class="p">()</span> 
+<span class="nx">syscall</span><span class="p">.</span><span class="nf">Read</span><span class="p">()</span>
+<span class="nx">syscall</span><span class="p">.</span><span class="nf">Write</span><span class="p">()</span> 
+<span class="nx">syscall</span><span class="p">.</span><span class="nf">Close</span><span class="p">()</span>
+<span class="nx">syscall</span><span class="p">.</span><span class="nf">Shutdown</span><span class="p">()</span>
+<span class="nx">syscall</span><span class="p">.</span><span class="nf">EpollCreate1</span><span class="p">()</span>
+<span class="nx">syscall</span><span class="p">.</span><span class="nf">EpollCtl</span><span class="p">()</span>
+<span class="nx">syscall</span><span class="p">.</span><span class="nf">EpollWait</span><span class="p">()</span> 
+<span class="nx">syscall</span><span class="p">.</span><span class="nf">EpollCtl</span><span class="p">()</span> 
+</code></pre></div><p>可以发现，两者的接口名称是一样的。
+只是Go语言的接口是大写字母开头，因为Go语言的大写字母开头的函数才可以导出。</p>
+<h2 id="一个简单的echo服务">一个简单的echo服务</h2>
+<p>来源：https://gist.github.com/tevino/3a4f4ec4ea9d0ca66d4f</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">main</span>
+<span class="kn">import</span> <span class="p">(</span>
+	<span class="s">&#34;fmt&#34;</span>
+	<span class="s">&#34;net&#34;</span>
+	<span class="s">&#34;os&#34;</span>
+	<span class="s">&#34;syscall&#34;</span>
+<span class="p">)</span>
+<span class="kd">const</span> <span class="p">(</span>
+	<span class="nx">EPOLLET</span>        <span class="p">=</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">31</span>
+	<span class="nx">MaxEpollEvents</span> <span class="p">=</span> <span class="mi">32</span>
+<span class="p">)</span>
+<span class="c1">// 接受一个文件描述符（连接）  
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">echo</span><span class="p">(</span><span class="nx">fd</span> <span class="kt">int</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">defer</span> <span class="nx">syscall</span><span class="p">.</span><span class="nf">Close</span><span class="p">(</span><span class="nx">fd</span><span class="p">)</span>
+	<span class="kd">var</span> <span class="nx">buf</span> <span class="p">[</span><span class="mi">32</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">]</span><span class="kt">byte</span> <span class="c1">// 分配缓存
+</span><span class="c1"></span>	<span class="k">for</span> <span class="p">{</span>
+		<span class="nx">nbytes</span><span class="p">,</span> <span class="nx">e</span> <span class="o">:=</span> <span class="nx">syscall</span><span class="p">.</span><span class="nf">Read</span><span class="p">(</span><span class="nx">fd</span><span class="p">,</span> <span class="nx">buf</span><span class="p">[:])</span> <span class="c1">// 读
+</span><span class="c1"></span>		<span class="k">if</span> <span class="nx">nbytes</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
+			<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;&gt;&gt;&gt; %s&#34;</span><span class="p">,</span> <span class="nx">buf</span><span class="p">)</span>
+			<span class="nx">syscall</span><span class="p">.</span><span class="nf">Write</span><span class="p">(</span><span class="nx">fd</span><span class="p">,</span> <span class="nx">buf</span><span class="p">[:</span><span class="nx">nbytes</span><span class="p">])</span>
+			<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;&lt;&lt;&lt; %s&#34;</span><span class="p">,</span> <span class="nx">buf</span><span class="p">)</span>
+		<span class="p">}</span>
+		<span class="k">if</span> <span class="nx">e</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span> <span class="c1">// 错误 或 关闭连接 
+</span><span class="c1"></span>			<span class="k">break</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+	<span class="kd">var</span> <span class="nx">event</span> <span class="nx">syscall</span><span class="p">.</span><span class="nx">EpollEvent</span> <span class="c1">// Epoll
+</span><span class="c1"></span>  <span class="kd">var</span> <span class="nx">events</span> <span class="p">[</span><span class="nx">MaxEpollEvents</span><span class="p">]</span><span class="nx">syscall</span><span class="p">.</span><span class="nx">EpollEvent</span>
+  
+  <span class="c1">// 申请一个套接字
+</span><span class="c1"></span>	<span class="nx">fd</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">syscall</span><span class="p">.</span><span class="nf">Socket</span><span class="p">(</span><span class="nx">syscall</span><span class="p">.</span><span class="nx">AF_INET</span><span class="p">,</span> <span class="nx">syscall</span><span class="p">.</span><span class="nx">O_NONBLOCK</span><span class="p">|</span><span class="nx">syscall</span><span class="p">.</span><span class="nx">SOCK_STREAM</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+		<span class="nx">os</span><span class="p">.</span><span class="nf">Exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+	<span class="p">}</span>
+  <span class="k">defer</span> <span class="nx">syscall</span><span class="p">.</span><span class="nf">Close</span><span class="p">(</span><span class="nx">fd</span><span class="p">)</span>
+  
+  <span class="c1">// 设置非阻塞
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">err</span> <span class="p">=</span> <span class="nx">syscall</span><span class="p">.</span><span class="nf">SetNonblock</span><span class="p">(</span><span class="nx">fd</span><span class="p">,</span> <span class="kc">true</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;setnonblock1: &#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+		<span class="nx">os</span><span class="p">.</span><span class="nf">Exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+	<span class="p">}</span>
+	<span class="nx">addr</span> <span class="o">:=</span> <span class="nx">syscall</span><span class="p">.</span><span class="nx">SockaddrInet4</span><span class="p">{</span><span class="nx">Port</span><span class="p">:</span> <span class="mi">2000</span><span class="p">}</span>
+	<span class="nb">copy</span><span class="p">(</span><span class="nx">addr</span><span class="p">.</span><span class="nx">Addr</span><span class="p">[:],</span> <span class="nx">net</span><span class="p">.</span><span class="nf">ParseIP</span><span class="p">(</span><span class="s">&#34;0.0.0.0&#34;</span><span class="p">).</span><span class="nf">To4</span><span class="p">())</span>
+  <span class="nx">syscall</span><span class="p">.</span><span class="nf">Bind</span><span class="p">(</span><span class="nx">fd</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">addr</span><span class="p">)</span> <span class="c1">// Bind接口
+</span><span class="c1"></span>  
+  <span class="c1">// 监听
+</span><span class="c1"></span>  <span class="nx">syscall</span><span class="p">.</span><span class="nf">Listen</span><span class="p">(</span><span class="nx">fd</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+  
+  <span class="c1">// 创建一个Epoll对象 用于控制整个Epoll过程
+</span><span class="c1"></span>	<span class="nx">epfd</span><span class="p">,</span> <span class="nx">e</span> <span class="o">:=</span> <span class="nx">syscall</span><span class="p">.</span><span class="nf">EpollCreate1</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+	<span class="k">if</span> <span class="nx">e</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;epoll_create1: &#34;</span><span class="p">,</span> <span class="nx">e</span><span class="p">)</span>
+		<span class="nx">os</span><span class="p">.</span><span class="nf">Exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+	<span class="p">}</span>
+  <span class="k">defer</span> <span class="nx">syscall</span><span class="p">.</span><span class="nf">Close</span><span class="p">(</span><span class="nx">epfd</span><span class="p">)</span>
+  
+  <span class="c1">// 初始化监听端口
+</span><span class="c1"></span>	<span class="nx">event</span><span class="p">.</span><span class="nx">Events</span> <span class="p">=</span> <span class="nx">syscall</span><span class="p">.</span><span class="nx">EPOLLIN</span>
+	<span class="nx">event</span><span class="p">.</span><span class="nx">Fd</span> <span class="p">=</span> <span class="nb">int32</span><span class="p">(</span><span class="nx">fd</span><span class="p">)</span>
+	<span class="k">if</span> <span class="nx">e</span> <span class="p">=</span> <span class="nx">syscall</span><span class="p">.</span><span class="nf">EpollCtl</span><span class="p">(</span><span class="nx">epfd</span><span class="p">,</span> <span class="nx">syscall</span><span class="p">.</span><span class="nx">EPOLL_CTL_ADD</span><span class="p">,</span> <span class="nx">fd</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">event</span><span class="p">);</span> <span class="nx">e</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;epoll_ctl: &#34;</span><span class="p">,</span> <span class="nx">e</span><span class="p">)</span>
+		<span class="nx">os</span><span class="p">.</span><span class="nf">Exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+  <span class="p">}</span>
+  
+  <span class="c1">// 事件循环
+</span><span class="c1"></span>	<span class="k">for</span> <span class="p">{</span>
+		<span class="nx">nevents</span><span class="p">,</span> <span class="nx">e</span> <span class="o">:=</span> <span class="nx">syscall</span><span class="p">.</span><span class="nf">EpollWait</span><span class="p">(</span><span class="nx">epfd</span><span class="p">,</span> <span class="nx">events</span><span class="p">[:],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+		<span class="k">if</span> <span class="nx">e</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;epoll_wait: &#34;</span><span class="p">,</span> <span class="nx">e</span><span class="p">)</span>
+			<span class="k">break</span>
+    <span class="p">}</span>
+    
+		<span class="k">for</span> <span class="nx">ev</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">ev</span> <span class="p">&lt;</span> <span class="nx">nevents</span><span class="p">;</span> <span class="nx">ev</span><span class="o">++</span> <span class="p">{</span>
+      <span class="c1">// 如果是监听端口有事件发生（有新的连接请求）
+</span><span class="c1"></span>			<span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="nx">events</span><span class="p">[</span><span class="nx">ev</span><span class="p">].</span><span class="nx">Fd</span><span class="p">)</span> <span class="o">==</span> <span class="nx">fd</span> <span class="p">{</span>
+				<span class="nx">connFd</span><span class="p">,</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">syscall</span><span class="p">.</span><span class="nf">Accept</span><span class="p">(</span><span class="nx">fd</span><span class="p">)</span> <span class="c1">// 接收新的连接
+</span><span class="c1"></span>				<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+					<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;accept: &#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+					<span class="k">continue</span>
+				<span class="p">}</span>
+				<span class="nx">syscall</span><span class="p">.</span><span class="nf">SetNonblock</span><span class="p">(</span><span class="nx">fd</span><span class="p">,</span> <span class="kc">true</span><span class="p">)</span> <span class="c1">// 设置非阻塞
+</span><span class="c1"></span>				<span class="nx">event</span><span class="p">.</span><span class="nx">Events</span> <span class="p">=</span> <span class="nx">syscall</span><span class="p">.</span><span class="nx">EPOLLIN</span> <span class="p">|</span> <span class="nx">EPOLLET</span> <span class="c1">// 设置事件类型
+</span><span class="c1"></span>				<span class="nx">event</span><span class="p">.</span><span class="nx">Fd</span> <span class="p">=</span> <span class="nb">int32</span><span class="p">(</span><span class="nx">connFd</span><span class="p">)</span>
+				<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">syscall</span><span class="p">.</span><span class="nf">EpollCtl</span><span class="p">(</span><span class="nx">epfd</span><span class="p">,</span> <span class="nx">syscall</span><span class="p">.</span><span class="nx">EPOLL_CTL_ADD</span><span class="p">,</span> <span class="nx">connFd</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">event</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+					<span class="nx">fmt</span><span class="p">.</span><span class="nf">Print</span><span class="p">(</span><span class="s">&#34;epoll_ctl: &#34;</span><span class="p">,</span> <span class="nx">connFd</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+					<span class="nx">os</span><span class="p">.</span><span class="nf">Exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="p">}</span>
+        
+      <span class="p">}</span> <span class="k">else</span> <span class="p">{</span> <span class="c1">// 读事件
+</span><span class="c1"></span>
+        <span class="c1">// 处理输入
+</span><span class="c1"></span>				<span class="k">go</span> <span class="nf">echo</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nx">events</span><span class="p">[</span><span class="nx">ev</span><span class="p">].</span><span class="nx">Fd</span><span class="p">))</span>
+			<span class="p">}</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div><h2 id="总结">总结</h2>
+<p>go语言的net包的编程模型是Connect Per Goroutine,在易用性和性能之间做了取舍，虽然性能不是顶尖，但是适用于大多数场景且编程简单。<br>
+如果想尝试一下其它的编程模型，可以使用syscall包编写自己感兴趣的模型。<br>
+<strong>注意</strong>：由于window和Linux的网络接口不同,编写多系统通用的网络库要注意底层的不同调用。</p>
+<h2 id="参考">参考</h2>
+<p>[1] <a href="https://colobu.com/2017/11/29/event-loop-networking-in-Go/" target="_blank" rel="noopener noreffer">smallnest . Go语言中实现基于 event-loop 网络处理</a><br>
+[1] <a href="https://www.jianshu.com/p/111adfe8c686" target="_blank" rel="noopener noreffer">旅行之间 . Linux 网络编程基础</a></p>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2020-08-30</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"></div>
+            <div class="post-info-share">
+                <span></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/go%E8%AF%AD%E8%A8%80/">Go语言</a>,&nbsp;<a href="/tags/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/">网络编程</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav">
+            <a href="/posts/2020.9/go%E5%8E%9F%E5%A7%8B%E5%A5%97%E6%8E%A5%E5%AD%97%E7%BC%96%E7%A8%8B/" class="next" rel="next" title="Go原始套接字编程">Go原始套接字编程<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+</article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.74.3">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2020</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://github.com/haunanz" target="_blank">haunanz</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="/lib/smooth-scroll/smooth-scroll.min.js"></script><script type="text/javascript" src="/lib/lazysizes/lazysizes.min.js"></script><script type="text/javascript" src="/lib/clipboard/clipboard.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":-1},"comment":{}};</script><script type="text/javascript" src="/js/theme.min.js"></script></body>
+</html>

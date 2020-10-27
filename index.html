@@ -10,7 +10,7 @@
 <meta property="og:description" content="" />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://haunanz.github.io/" />
-<meta property="og:updated_time" content="2020-10-21T22:48:38+08:00" />
+<meta property="og:updated_time" content="2020-10-26T22:08:10+08:00" />
 <meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="Haunanz"/>
 <meta name="twitter:description" content=""/>
@@ -73,24 +73,29 @@
         alt="./hood_460x460.jpg"
         title="./hood_460x460.jpg" /></a></div></div>
 <article class="single summary" itemscope itemtype="http://schema.org/Article"><h1 class="single-title" itemprop="name headline">
+        <a href="/posts/note/%E5%90%8C%E6%97%B6%E5%A4%84%E7%90%86tcp%E5%92%8Cudp/">同时处理TCP和UDP</a>
+    </h1><div class="post-meta"><span class="post-author"><a href="https://github.com/haunanz" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>haunanz</a></span>&nbsp;<span class="post-publish">发布于 <time datetime="2020-10-26">2020-10-26</time></span></div><div class="content">正文 面试常见题，是否可以在一个linux的网络端口同时处理TCP和UDP。 常间的同时处理TCP和UDP的程序有超级服务inetd 和安卓的调试</div><div class="post-footer">
+        <a href="/posts/note/%E5%90%8C%E6%97%B6%E5%A4%84%E7%90%86tcp%E5%92%8Cudp/">阅读全文</a><div class="post-tags">
+                <i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/%E7%AC%94%E8%AE%B0/">笔记</a></div></div>
+</article><article class="single summary" itemscope itemtype="http://schema.org/Article"><h1 class="single-title" itemprop="name headline">
         <a href="/posts/note/1-%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BD%BF%E7%94%A8%E5%8A%A8%E6%80%81%E5%86%85%E5%AD%98/">为什么使用动态内存</a>
     </h1><div class="post-meta"><span class="post-author"><a href="https://github.com/haunanz" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>haunanz</a></span>&nbsp;<span class="post-publish">发布于 <time datetime="2020-10-21">2020-10-21</time></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E7%AC%94%E8%AE%B0/"><i class="far fa-folder fa-fw"></i>笔记</a></span></div><div class="content">如果在编码时就可以确定作用域和所需内存大小，那么动态内存就没有必要使用。 但是在实际的生产中，对于复杂的系统来说，内存的大小总是不可估计的。 下</div><div class="post-footer">
         <a href="/posts/note/1-%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BD%BF%E7%94%A8%E5%8A%A8%E6%80%81%E5%86%85%E5%AD%98/">阅读全文</a><div class="post-tags">
                 <i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/%E7%AC%94%E8%AE%B0/">笔记</a>,&nbsp;<a href="/tags/%E5%86%85%E5%AD%98/">内存</a></div></div>
 </article><article class="single summary" itemscope itemtype="http://schema.org/Article"><h1 class="single-title" itemprop="name headline">
-        <a href="/posts/go%E7%AC%94%E8%AE%B0-%E5%88%87%E7%89%87%E6%88%AA%E6%96%AD%E5%AF%BC%E8%87%B4%E5%86%85%E5%AD%98%E4%B8%8D%E8%83%BD%E9%87%8A%E6%94%BE/">Go笔记 切片截断导致内存不能释放</a>
+        <a href="/posts/2020.9/go%E7%AC%94%E8%AE%B0-%E5%88%87%E7%89%87%E6%88%AA%E6%96%AD%E5%AF%BC%E8%87%B4%E5%86%85%E5%AD%98%E4%B8%8D%E8%83%BD%E9%87%8A%E6%94%BE/">Go笔记 切片截断导致内存泄露</a>
     </h1><div class="post-meta"><span class="post-author"><a href="https://github.com/haunanz" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>haunanz</a></span>&nbsp;<span class="post-publish">发布于 <time datetime="2020-09-26">2020-09-26</time></span>&nbsp;<span class="post-category">收录于 <a href="/categories/go%E7%AC%94%E8%AE%B0/"><i class="far fa-folder fa-fw"></i>Go笔记</a></span></div><div class="content">引言 go与语言在使用切片截断时，底层数组没有改变，依然持有指向堆内存的指针，导致内存无法释放。 // 示例 type Node [100]byte data := []*Node{} for i:=10; i&lt;10; i++ { tmp := &amp;Node{} data = append(data,tmp) } data =</div><div class="post-footer">
-        <a href="/posts/go%E7%AC%94%E8%AE%B0-%E5%88%87%E7%89%87%E6%88%AA%E6%96%AD%E5%AF%BC%E8%87%B4%E5%86%85%E5%AD%98%E4%B8%8D%E8%83%BD%E9%87%8A%E6%94%BE/">阅读全文</a><div class="post-tags">
-                <i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/go/">Go</a></div></div>
+        <a href="/posts/2020.9/go%E7%AC%94%E8%AE%B0-%E5%88%87%E7%89%87%E6%88%AA%E6%96%AD%E5%AF%BC%E8%87%B4%E5%86%85%E5%AD%98%E4%B8%8D%E8%83%BD%E9%87%8A%E6%94%BE/">阅读全文</a><div class="post-tags">
+                <i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/go%E8%AF%AD%E8%A8%80/">Go语言</a></div></div>
 </article><article class="single summary" itemscope itemtype="http://schema.org/Article"><h1 class="single-title" itemprop="name headline">
-        <a href="/posts/go%E5%8E%9F%E5%A7%8B%E5%A5%97%E6%8E%A5%E5%AD%97%E7%BC%96%E7%A8%8B/">Go原始套接字编程</a>
+        <a href="/posts/2020.9/go%E5%8E%9F%E5%A7%8B%E5%A5%97%E6%8E%A5%E5%AD%97%E7%BC%96%E7%A8%8B/">Go原始套接字编程</a>
     </h1><div class="post-meta"><span class="post-author"><a href="https://github.com/haunanz" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>haunanz</a></span>&nbsp;<span class="post-publish">发布于 <time datetime="2020-09-01">2020-09-01</time></span>&nbsp;<span class="post-category">收录于 <a href="/categories/go%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/"><i class="far fa-folder fa-fw"></i>Go网络编程</a></span></div><div class="content">引言 请注意，本文档的运行环境是Linux。 在Windows环境下注意系统调用的接口有差别。 两个计算机如何在网络中定位彼此的位置呢？计算机中的</div><div class="post-footer">
-        <a href="/posts/go%E5%8E%9F%E5%A7%8B%E5%A5%97%E6%8E%A5%E5%AD%97%E7%BC%96%E7%A8%8B/">阅读全文</a><div class="post-tags">
+        <a href="/posts/2020.9/go%E5%8E%9F%E5%A7%8B%E5%A5%97%E6%8E%A5%E5%AD%97%E7%BC%96%E7%A8%8B/">阅读全文</a><div class="post-tags">
                 <i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/go%E8%AF%AD%E8%A8%80/">Go语言</a>,&nbsp;<a href="/tags/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/">网络编程</a></div></div>
 </article><article class="single summary" itemscope itemtype="http://schema.org/Article"><h1 class="single-title" itemprop="name headline">
-        <a href="/posts/go%E8%AF%AD%E8%A8%80linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B-%E4%BD%BF%E7%94%A8syscall/">Go语言Linux网络编程-使用原始套接字 </a>
+        <a href="/posts/2020.9/go%E8%AF%AD%E8%A8%80linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B-%E4%BD%BF%E7%94%A8syscall/">Go语言Linux网络编程-使用原始套接字 </a>
     </h1><div class="post-meta"><span class="post-author"><a href="https://github.com/haunanz" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>haunanz</a></span>&nbsp;<span class="post-publish">发布于 <time datetime="2020-08-30">2020-08-30</time></span>&nbsp;<span class="post-category">收录于 <a href="/categories/go%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/"><i class="far fa-folder fa-fw"></i>Go网络编程</a></span></div><div class="content">Go语言直接使用原始套接字编写网络程序。 想使用Go学习网络编程，但大多是教程都是从套接字开始讲起。但是GO提供了net包，屏蔽了底层的复杂性</div><div class="post-footer">
-        <a href="/posts/go%E8%AF%AD%E8%A8%80linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B-%E4%BD%BF%E7%94%A8syscall/">阅读全文</a><div class="post-tags">
+        <a href="/posts/2020.9/go%E8%AF%AD%E8%A8%80linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B-%E4%BD%BF%E7%94%A8syscall/">阅读全文</a><div class="post-tags">
                 <i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/go%E8%AF%AD%E8%A8%80/">Go语言</a>,&nbsp;<a href="/tags/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/">网络编程</a></div></div>
 </article></div></div>
             </main><footer class="footer">
