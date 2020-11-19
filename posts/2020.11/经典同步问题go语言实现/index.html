@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>经典同步问题Go语言实现 - Haunanz</title><meta name="Description" content=""><meta property="og:title" content="经典同步问题Go语言实现" />
+<meta property="og:description" content="引言 并发编程中各个并发实例有许多的制约关系，为了协调各个实例的制约关系，引入了同步的概念。 下面了解几个经典的同步问题： 生产者消费者问题 读写者" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://haunanz.github.io/posts/2020.11/%E7%BB%8F%E5%85%B8%E5%90%8C%E6%AD%A5%E9%97%AE%E9%A2%98go%E8%AF%AD%E8%A8%80%E5%AE%9E%E7%8E%B0/" />
+<meta property="article:published_time" content="2020-11-18T19:20:18+08:00" />
+<meta property="article:modified_time" content="2020-11-18T19:20:18+08:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="经典同步问题Go语言实现"/>
+<meta name="twitter:description" content="引言 并发编程中各个并发实例有许多的制约关系，为了协调各个实例的制约关系，引入了同步的概念。 下面了解几个经典的同步问题： 生产者消费者问题 读写者"/>
+<meta name="application-name" content="Haunanz">
+<meta name="apple-mobile-web-app-title" content="Haunanz"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://haunanz.github.io/posts/2020.11/%E7%BB%8F%E5%85%B8%E5%90%8C%E6%AD%A5%E9%97%AE%E9%A2%98go%E8%AF%AD%E8%A8%80%E5%AE%9E%E7%8E%B0/" /><link rel="prev" href="https://haunanz.github.io/posts/note/%E5%90%8C%E6%97%B6%E5%A4%84%E7%90%86tcp%E5%92%8Cudp/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"><link rel="stylesheet" href="/lib/animate/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "经典同步问题Go语言实现",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/haunanz.github.io\/posts\/2020.11\/%E7%BB%8F%E5%85%B8%E5%90%8C%E6%AD%A5%E9%97%AE%E9%A2%98go%E8%AF%AD%E8%A8%80%E5%AE%9E%E7%8E%B0\/"
+        },"genre": "posts","keywords": "并发编程, Go, 操作系统","wordcount":  3582 ,
+        "url": "https:\/\/haunanz.github.io\/posts\/2020.11\/%E7%BB%8F%E5%85%B8%E5%90%8C%E6%AD%A5%E9%97%AE%E9%A2%98go%E8%AF%AD%E8%A8%80%E5%AE%9E%E7%8E%B0\/","datePublished": "2020-11-18T19:20:18+08:00","dateModified": "2020-11-18T19:20:18+08:00","publisher": {
+            "@type": "Organization",
+            "name": "haunanz"},"author": {
+                "@type": "Person",
+                "name": "haunanz"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="" header-mobile=""><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : '' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="Haunanz">Haunanz</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="https://github.com/haunanz" rel="noopener noreffer" target="_blank"><i class="fab fa-github-alt fa-fw"></i>  </a><span class="menu-item delimiter"></span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="Haunanz">Haunanz</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><a class="menu-item" href="/posts/" title="">文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="https://github.com/haunanz" title="" rel="noopener noreffer" target="_blank"><i class="fab fa-github-alt fa-fw"></i></a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">经典同步问题Go语言实现</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://github.com/haunanz" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>haunanz</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-11-18">2020-11-18</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 3582 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 8 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#引言">引言</a></li>
+    <li><a href="#基本概念">基本概念</a></li>
+    <li><a href="#生产者-消费者问题">生产者-消费者问题</a>
+      <ul>
+        <li><a href="#互斥锁解法">互斥锁解法</a></li>
+        <li><a href="#更复杂的生产者消费者问题">更复杂的生产者消费者问题</a></li>
+      </ul>
+    </li>
+    <li><a href="#读者-写者问题">读者-写者问题</a>
+      <ul>
+        <li><a href="#一般解法读优先">一般解法（读优先）</a></li>
+        <li><a href="#读写平等">读写平等</a></li>
+      </ul>
+    </li>
+    <li><a href="#哲学家就餐问题">哲学家就餐问题</a>
+      <ul>
+        <li><a href="#出现死锁的情况">出现死锁的情况</a></li>
+        <li><a href="#常规解法-限制同时就餐的数量">常规解法-限制同时就餐的数量</a></li>
+        <li><a href="#常规解法-同时获取两根筷子">常规解法-同时获取两根筷子</a></li>
+        <li><a href="#常规解法-奇偶编号">常规解法-奇偶编号</a></li>
+        <li><a href="#简化为生产者消费者问题">简化为生产者消费者问题</a></li>
+      </ul>
+    </li>
+    <li><a href="#吸烟者问题">吸烟者问题</a></li>
+    <li><a href="#解决同步问题的常规方法">解决同步问题的常规方法</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><h2 id="引言">引言</h2>
+<p>并发编程中各个并发实例有许多的制约关系，为了协调各个实例的制约关系，引入了同步的概念。<br>
+下面了解几个经典的同步问题：</p>
+<ol>
+<li>生产者消费者问题</li>
+<li>读写者问题</li>
+<li>哲学家就餐问题</li>
+<li>吸烟者问题
+许多的同步问题都可以简化为这三类问题。</li>
+</ol>
+<h2 id="基本概念">基本概念</h2>
+<p>解决这些问题只需要了解互斥这个概念就可以做到，下面来了解一些基本概念。</p>
+<p>临界资源： 系统中的某些资源一次只能有一个并发实例使用，多个实例使用时是未定义的。<br>
+临界区：并发实例中访问临界资源的那段代码。<br>
+同步：多个并发实例为了协调工作次序而形成的相互制约关系。<br>
+互斥：当一个并发实例进入临界时，其它并发实例会被阻塞。<br>
+阻塞： 并发实例因为不能获得某些资源而等待的行为。<br>
+互斥锁： 一般是由硬件系统和操作系统共同提供的接口，来帮助用户实现互斥的工具。<br>
+死锁： 多个并发实例占有一个临界资源，但是又需要被别的实例占有的某个资源。互相期望对方的资源。导致程序不能执行下去。 <br>
+饥饿： 只一个实例长期得不到临界资源的现象。
+原子操作: 又被叫做原语,只操作过程中连续的,不可被中断的一组程序。</p>
+<p>特别的：<br>
+互斥锁一般由原子操作来实现。<br>
+硬件系统直接提供了swap指令来直接支持，因为该指令要占用总线吗，所以在多核CPU中也有效。</p>
+<p>go语言在 sync 包 提供了 sync.Mutex 互斥锁。
+c语言提供了 &lt;pthread.h&gt; 头文件中提供了 pthread_mutex_t 互斥锁。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">import</span> <span class="s">&#34;sync&#34;</span>
+
+<span class="nx">mutx</span> <span class="o">:=</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span><span class="p">{}</span>  <span class="c1">// 创建互斥锁
+</span><span class="c1"></span><span class="nx">mutx</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>           <span class="c1">// 锁住临界区
+</span><span class="c1">// do something
+</span><span class="c1"></span><span class="nx">mutx</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>         <span class="c1">// 释放临界区
+</span></code></pre></div><p>可以了解一下在C语言的中的实现,往往会用到😂。</p>
+<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="c1">// c语言相关(可以忽略)
+</span><span class="c1"></span> <span class="c1">// 环境是在linux中 
+</span><span class="c1"></span> <span class="c1">// 如果使用gcc请注意安装时的线程实现方式选项选POSIX
+</span><span class="c1"></span> <span class="cp">#include</span> <span class="cpf">&lt;pthread.h&gt;</span><span class="cp">
+</span><span class="cp"></span>
+<span class="n">pthread_mutex_t</span> <span class="n">mutx</span><span class="p">;</span>           <span class="c1">// 创建互斥锁
+</span><span class="c1"></span><span class="n">pthread_mutex_init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mutex</span><span class="p">,</span><span class="nb">NULL</span><span class="p">)</span> <span class="c1">// 初始化互斥锁
+</span><span class="c1"></span><span class="n">pthread_mutex_lock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mutx</span><span class="p">);</span>      <span class="c1">// 锁住临界区
+</span><span class="c1">// do something
+</span><span class="c1"></span><span class="n">phtread_mutex_unlock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mutex</span><span class="p">);</span>   <span class="c1">// 释放临界区
+</span><span class="c1"></span>
+
+
+<span class="c1">// 注意 不使用后销毁
+</span><span class="c1"></span><span class="n">pthread_mutex_destroy</span><span class="p">(</span><span class="n">mutx</span><span class="p">);</span>
+</code></pre></div><h2 id="生产者-消费者问题">生产者-消费者问题</h2>
+<p>最常见的，最典型的问题。</p>
+<p><strong>问题描述</strong>：一组生产者，一组消费者共享一个初始为空，大小为n的缓冲区。<br>
+生产者：缓冲区未满时向缓冲区填写消息，否则阻塞，直到缓冲区有空闲。<br>
+消费者：缓冲区未空时向缓冲区取消息，否则阻塞，直到有消息。</p>
+<h3 id="互斥锁解法">互斥锁解法</h3>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">var</span> <span class="nx">n</span> <span class="kt">int</span> <span class="p">=</span> <span class="mi">10</span> <span class="c1">// 缓冲区大小
+</span><span class="c1"></span><span class="kd">var</span> <span class="nx">mutex</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span> <span class="p">=</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span><span class="p">{}</span> <span class="c1">// 全局变量
+</span><span class="c1"></span><span class="kd">var</span> <span class="nx">buf</span> <span class="p">[]</span><span class="kt">int</span> <span class="c1">// 缓冲区
+</span><span class="c1"></span>
+<span class="kd">func</span> <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
+  <span class="nx">buf</span> <span class="p">=</span> <span class="nb">make</span><span class="p">([]</span><span class="kt">int</span><span class="p">,</span><span class="nx">n</span><span class="p">)</span>
+  <span class="nx">buf</span> <span class="p">=</span> <span class="nx">buf</span><span class="p">[:</span><span class="mi">0</span><span class="p">]</span>
+<span class="p">}</span>
+
+<span class="c1">// 生产者
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">productor</span><span class="p">(</span><span class="nx">data</span> <span class="kt">int</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">for</span> <span class="p">{</span>
+		<span class="nx">mutex</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>         <span class="c1">// 获得锁 进入临界区
+</span><span class="c1"></span>		<span class="k">for</span> <span class="nb">len</span><span class="p">(</span><span class="nx">buf</span><span class="p">)</span> <span class="o">==</span> <span class="mi">10</span> <span class="p">{</span> <span class="c1">// 判断条件 缓冲区是否满了
+</span><span class="c1"></span>			<span class="nx">mutex</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>          <span class="c1">// 满的缓冲区 要将锁释放出来
+</span><span class="c1"></span>			<span class="nx">time</span><span class="p">.</span><span class="nf">Sleep</span><span class="p">(</span><span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="p">)</span> <span class="c1">// 等一会儿
+</span><span class="c1"></span>			<span class="nx">mutex</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>            <span class="c1">// 重新获取锁
+</span><span class="c1"></span>		<span class="p">}</span>
+
+		<span class="nx">buf</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">buf</span><span class="p">,</span> <span class="nx">data</span><span class="p">)</span> <span class="c1">// 将生产的数据写入缓冲区
+</span><span class="c1"></span>
+		<span class="nx">mutex</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span> <span class="c1">// 释放锁
+</span><span class="c1"></span>	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// 消费者
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">consumer</span><span class="p">()</span> <span class="p">{</span>
+	<span class="k">for</span> <span class="p">{</span>
+		<span class="nx">mutex</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>        <span class="c1">// 获得锁 进入临界区
+</span><span class="c1"></span>		<span class="k">for</span> <span class="nb">len</span><span class="p">(</span><span class="nx">buf</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span> <span class="c1">// 判断条件 缓冲区是否为空
+</span><span class="c1"></span>			<span class="nx">mutex</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>          <span class="c1">// 空的缓冲区 要将锁释放出来
+</span><span class="c1"></span>			<span class="nx">time</span><span class="p">.</span><span class="nf">Sleep</span><span class="p">(</span><span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="p">)</span> <span class="c1">// 等一会儿
+</span><span class="c1"></span>			<span class="nx">mutex</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>            <span class="c1">// 重新获取锁
+</span><span class="c1"></span>		<span class="p">}</span>
+
+		<span class="nx">data</span> <span class="o">:=</span> <span class="nx">buf</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="nx">buf</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="c1">// 从缓冲区获取数据
+</span><span class="c1"></span>		<span class="nx">buf</span> <span class="p">=</span> <span class="nx">buf</span><span class="p">[:</span><span class="nb">len</span><span class="p">(</span><span class="nx">buf</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="c1">// 打印到标准输出
+</span><span class="c1"></span>
+		<span class="nx">mutex</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span> <span class="c1">// 释放锁
+</span><span class="c1"></span>	<span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div><p><strong>思考：</strong></p>
+<ol>
+<li>想一想，如何验证正确性。</li>
+<li>我们用的是全局变量来当作缓冲区，如果传入[]int切片会造成何种情况。</li>
+<li>更好的办法是使用条件变量，试着使用条件变量写一个。</li>
+</ol>
+<p>在go语言中，go提供了更加方便的组件chan来帮助我们编写并发程序，来试一下。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">var</span> <span class="nx">ch</span> <span class="kd">chan</span> <span class="kt">int</span> <span class="p">=</span> <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="kt">int</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+
+<span class="kd">func</span> <span class="nf">consumer</span><span class="p">()</span> <span class="p">{</span>
+	<span class="k">for</span> <span class="p">{</span>
+		<span class="nx">num</span> <span class="o">:=</span> <span class="o">&lt;-</span><span class="nx">ch</span>
+		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">num</span><span class="p">)</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">productor</span><span class="p">(</span><span class="nx">num</span> <span class="kt">int</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">for</span> <span class="p">{</span>
+		<span class="nx">ch</span> <span class="o">&lt;-</span> <span class="nx">num</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div><p>怎么样，是不是超级简单。</p>
+<h3 id="更复杂的生产者消费者问题">更复杂的生产者消费者问题</h3>
+<p><strong>问题描述：</strong>
+盘子：只能放一个水果。<br>
+爸爸：向盘子放苹果。<br>
+妈妈：向盘子放橘子。<br>
+女儿：向盘子拿苹果。<br>
+儿子：向盘子拿橘子。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="kd">var</span> <span class="p">(</span>
+	<span class="nx">plateVal</span> <span class="kt">string</span>     <span class="p">=</span> <span class="s">&#34;&#34;</span>           <span class="c1">// 盘子
+</span><span class="c1"></span>	<span class="nx">plate</span>    <span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span> <span class="p">=</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span><span class="p">{}</span> <span class="c1">// 盘子互斥锁
+</span><span class="c1"></span>	<span class="nx">apple</span>    <span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span> <span class="p">=</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span><span class="p">{}</span> <span class="c1">// 苹果
+</span><span class="c1"></span>	<span class="nx">orange</span>   <span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span> <span class="p">=</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span><span class="p">{}</span> <span class="c1">// 橘子
+</span><span class="c1"></span><span class="p">)</span>
+
+<span class="kd">func</span> <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">apple</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
+	<span class="nx">orange</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">dad</span><span class="p">()</span> <span class="p">{</span> <span class="c1">// 父亲
+</span><span class="c1"></span>	<span class="k">for</span> <span class="p">{</span>
+		<span class="nx">plate</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>       <span class="c1">// 获取盘子互斥锁
+</span><span class="c1"></span>		<span class="nx">plateVal</span> <span class="p">=</span> <span class="s">&#34;apple&#34;</span> <span class="c1">// 像盘子中放苹果
+</span><span class="c1"></span>		<span class="nx">apple</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>     <span class="c1">// 允许取苹果
+</span><span class="c1"></span>	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">mom</span><span class="p">()</span> <span class="p">{</span> <span class="c1">// 母亲
+</span><span class="c1"></span>	<span class="k">for</span> <span class="p">{</span>
+		<span class="nx">plate</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>        <span class="c1">// 获取盘子互斥锁
+</span><span class="c1"></span>		<span class="nx">plateVal</span> <span class="p">=</span> <span class="s">&#34;orange&#34;</span> <span class="c1">// 向瓶子中放橘子
+</span><span class="c1"></span>		<span class="nx">orange</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>     <span class="c1">// 允许取橘子
+</span><span class="c1"></span>	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">son</span><span class="p">()</span> <span class="p">{</span> <span class="c1">// 儿子
+</span><span class="c1"></span>	<span class="k">for</span> <span class="p">{</span>
+		<span class="nx">orange</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>   <span class="c1">// 互斥的取橘子
+</span><span class="c1"></span>		<span class="nx">get</span> <span class="o">:=</span> <span class="nx">plateVal</span> <span class="c1">// 从盘子中取橘子
+</span><span class="c1"></span>		<span class="nx">plateVal</span> <span class="p">=</span> <span class="s">&#34;&#34;</span>
+		<span class="nx">plate</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>              <span class="c1">// 允许向盘子放东西
+</span><span class="c1"></span>		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;son eat&#34;</span><span class="p">,</span> <span class="nx">get</span><span class="p">)</span> <span class="c1">// 吃
+</span><span class="c1"></span>	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">daughter</span><span class="p">()</span> <span class="p">{</span>
+	<span class="k">for</span> <span class="p">{</span>
+		<span class="nx">apple</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>    <span class="c1">// 互斥的取苹果
+</span><span class="c1"></span>		<span class="nx">get</span> <span class="o">:=</span> <span class="nx">plateVal</span> <span class="c1">// 从盘子中取苹果
+</span><span class="c1"></span>		<span class="nx">plateVal</span> <span class="p">=</span> <span class="s">&#34;&#34;</span>
+		<span class="nx">plate</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>                   <span class="c1">// 允许向盘子放东西
+</span><span class="c1"></span>		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;daughter eat&#34;</span><span class="p">,</span> <span class="nx">get</span><span class="p">)</span> <span class="c1">// 吃
+</span><span class="c1"></span>	<span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div><h2 id="读者-写者问题">读者-写者问题</h2>
+<p>读写锁的实现原理。<br>
+一般情况下，互斥锁的效率普遍都要比读写锁高（就算是在多读少写的情况下）。 <br>
+特别是读写锁在维护时容易出意想不到的bug。<br>
+陈硕在《linux多线程编程》就中建议尽量不要使用读写锁。</p>
+<p><strong>问题描述</strong>
+有一组读者和一组写者共享一个文件。<br>
+读者：多个读者可以同时读一个文件。<br>
+写者：写者写文件时，不允许有另外的读者或写者读写文件。只能有一个写者独占文件。</p>
+<h3 id="一般解法读优先">一般解法（读优先）</h3>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">var</span> <span class="p">(</span>
+	<span class="nx">count</span> <span class="kt">int</span>        <span class="p">=</span> <span class="mi">0</span>            <span class="c1">// 记录当前进入临界区的读者数量
+</span><span class="c1"></span>	<span class="nx">mutex</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span> <span class="p">=</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span><span class="p">{}</span> <span class="c1">// 保护更新count的互斥量
+</span><span class="c1"></span>	<span class="nx">rw</span>    <span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span> <span class="p">=</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span><span class="p">{}</span> <span class="c1">// 保证读者写者互斥的访问文件
+</span><span class="c1"></span>	<span class="nx">file</span>  <span class="kt">int</span>        <span class="p">=</span> <span class="mi">0</span>            <span class="c1">// 代表共享的文件
+</span><span class="c1"></span><span class="p">)</span>
+
+<span class="c1">// 写者
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">writer</span><span class="p">()</span> <span class="p">{</span>
+	<span class="k">for</span> <span class="p">{</span>
+		<span class="nx">rw</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>   <span class="c1">// 互斥访问
+</span><span class="c1"></span>		<span class="nx">file</span><span class="o">++</span>      <span class="c1">// 写入
+</span><span class="c1"></span>		<span class="nx">rw</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span> <span class="c1">// 释放共享文件
+</span><span class="c1"></span>	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// 读者
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">reader</span><span class="p">()</span> <span class="p">{</span>
+	<span class="k">for</span> <span class="p">{</span>
+		<span class="nx">mutex</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>    <span class="c1">//  访问count变量
+</span><span class="c1"></span>		<span class="k">if</span> <span class="nx">count</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span> <span class="c1">// 当第一个读者访问共享文件时
+</span><span class="c1"></span>			<span class="nx">rw</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span> <span class="c1">// 阻止写进程
+</span><span class="c1"></span>		<span class="p">}</span>
+		<span class="nx">count</span><span class="o">++</span>        <span class="c1">// 读者计数器加1
+</span><span class="c1"></span>		<span class="nx">mutex</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span> <span class="c1">// 释放互斥变量
+</span><span class="c1"></span>
+		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">file</span><span class="p">)</span> <span class="c1">// 读取
+</span><span class="c1"></span>
+		<span class="nx">mutex</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>    <span class="c1">// 访问count
+</span><span class="c1"></span>		<span class="nx">count</span><span class="o">--</span>         <span class="c1">// 读者计数器减1
+</span><span class="c1"></span>		<span class="k">if</span> <span class="nx">count</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span> <span class="c1">// 最后一个读者退出
+</span><span class="c1"></span>			<span class="nx">rw</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span> <span class="c1">// 允许写者写
+</span><span class="c1"></span>		<span class="p">}</span>
+		<span class="nx">mutex</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span> <span class="c1">// 释放互斥变量count
+</span><span class="c1"></span>	<span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div><p>这个解法是读者优先的,在读者特别多的情况下会造成写者的饥饿。<br>
+造成写者永远不能进入临界区。<br>
+下面我们来看看读写公平的实现。</p>
+<h3 id="读写平等">读写平等</h3>
+<p>上述的方案造成读优先的原因是因为：一个读进程获取访问权限后，其它的所有读者都可以直接访问文件。<br>
+那么我们加上对写者请求的关联，就可以构造出读写公平的访问。<br>
+增加一个互斥锁 w 。规定读者和写者都要先访问这个锁，使得写者占有该锁后，后续的读者不能直接访问，必须等待写者访问后才能访问。<br>
+而写者获取 w 后还必须等待之前的 reader 释放 rw 锁，才能独占文件并继续执行。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">var</span> <span class="p">(</span>
+	<span class="nx">count</span> <span class="kt">int</span>        <span class="p">=</span> <span class="mi">0</span>            <span class="c1">// 当前读者数量
+</span><span class="c1"></span>	<span class="nx">mutex</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span> <span class="p">=</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span><span class="p">{}</span> <span class="c1">//用于保护count的互斥
+</span><span class="c1"></span>	<span class="nx">rw</span>    <span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span> <span class="p">=</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span><span class="p">{}</span> <span class="c1">// 读者写者互斥访问
+</span><span class="c1"></span>	<span class="nx">w</span>     <span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span> <span class="p">=</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span><span class="p">{}</span> <span class="c1">// 读写平等
+</span><span class="c1"></span>	<span class="nx">file</span>  <span class="kt">int</span>        <span class="p">=</span> <span class="mi">0</span>            <span class="c1">// 表示要访问的文件
+</span><span class="c1"></span><span class="p">)</span>
+
+<span class="kd">func</span> <span class="nf">write</span><span class="p">()</span> <span class="p">{</span>
+	<span class="k">for</span> <span class="p">{</span>
+		<span class="nx">w</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>    <span class="c1">// 请求访问
+</span><span class="c1"></span>		<span class="nx">rw</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>   <span class="c1">// 互斥访问 获取文件访问权
+</span><span class="c1"></span>		<span class="nx">file</span><span class="o">++</span>      <span class="c1">// 写操作
+</span><span class="c1"></span>		<span class="nx">rw</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span> <span class="c1">// 释放共享文件
+</span><span class="c1"></span>		<span class="nx">w</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>  <span class="c1">// 恢复对共享文件的访问
+</span><span class="c1"></span>	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">reader</span><span class="p">()</span> <span class="p">{</span>
+	<span class="k">for</span> <span class="p">{</span>
+		<span class="nx">w</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>        <span class="c1">// 请求访问 如果有写者请求 这里就会阻塞
+</span><span class="c1"></span>		<span class="nx">mutex</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>    <span class="c1">// 访问count
+</span><span class="c1"></span>		<span class="k">if</span> <span class="nx">count</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span> <span class="c1">// 第一个读
+</span><span class="c1"></span>			<span class="nx">rw</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span> <span class="c1">// 获取文件访问权
+</span><span class="c1"></span>		<span class="p">}</span>
+		<span class="nx">count</span><span class="o">++</span>        <span class="c1">// 读者计数器加一
+</span><span class="c1"></span>		<span class="nx">mutex</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span> <span class="c1">// 退出count访问
+</span><span class="c1"></span>		<span class="nx">w</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>     <span class="c1">// 请求访问结束 此时可以有其它的读者写者申请访问
+</span><span class="c1"></span>
+		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">file</span><span class="p">)</span> <span class="c1">// 读
+</span><span class="c1"></span>
+		<span class="nx">mutex</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>    <span class="c1">// 访问count
+</span><span class="c1"></span>		<span class="nx">count</span><span class="o">--</span>         <span class="c1">// 读者计数器减一
+</span><span class="c1"></span>		<span class="k">if</span> <span class="nx">count</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span> <span class="c1">// 如果是最一个
+</span><span class="c1"></span>			<span class="nx">rw</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span> <span class="c1">// 释放对文件的占有
+</span><span class="c1"></span>		<span class="p">}</span>
+		<span class="nx">mutex</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span> <span class="c1">// 退出访问count
+</span><span class="c1"></span>	<span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div><p><strong>思考：</strong></p>
+<ol>
+<li>如何验证正确性。</li>
+<li>根据上面的原理，试着自己构建一个读写锁。</li>
+<li>使用go test验证一下你自己构造的读写锁的性能和sync.Mutex以及sync.RWMutex的性能。</li>
+</ol>
+<h2 id="哲学家就餐问题">哲学家就餐问题</h2>
+<p>一般，在日常学习或工作中不会碰到这个问题。<br>
+如果出现这种问题一般是设计有问题,要好好反思一下有没有更好的设计。</p>
+<p><strong>问题描述：</strong>
+一张圆桌上有5个哲学家，每名哲学家之间都有一根筷子，共计5根筷子；
+哲学家有两种状态，进餐或思考。 <br>
+进餐： 哲学家需要左右两根筷子才能进餐，否则等待。<br>
+思考： 不需要筷子。</p>
+<h3 id="出现死锁的情况">出现死锁的情况</h3>
+<p><code>注意:下面的写法会导致死锁</code></p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">var</span> <span class="nx">chopstick</span> <span class="p">[]</span><span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span> <span class="p">=</span> <span class="nb">make</span><span class="p">([]</span><span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+
+<span class="kd">func</span> <span class="nf">ph</span><span class="p">(</span><span class="nx">no</span> <span class="kt">int</span><span class="p">)</span> <span class="p">{</span> <span class="c1">// 哲学家 no为哲学家的编号
+</span><span class="c1"></span>	<span class="k">for</span> <span class="p">{</span>
+		<span class="nx">chopstick</span><span class="p">[</span><span class="nx">no</span><span class="p">].</span><span class="nf">Lock</span><span class="p">()</span>       <span class="c1">// 取左边的筷子
+</span><span class="c1"></span>		<span class="nx">chopstick</span><span class="p">[(</span><span class="nx">no</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">%</span><span class="mi">5</span><span class="p">].</span><span class="nf">Lock</span><span class="p">()</span> <span class="c1">// 取右边的筷子
+</span><span class="c1"></span>
+		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;%d eating\n&#34;</span><span class="p">,</span> <span class="nx">no</span><span class="p">)</span> <span class="c1">// 吃饭
+</span><span class="c1"></span>
+		<span class="nx">chopstick</span><span class="p">[(</span><span class="nx">no</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">%</span><span class="mi">5</span><span class="p">].</span><span class="nf">Unlock</span><span class="p">()</span>  <span class="c1">// 放回右边的筷子
+</span><span class="c1"></span>		<span class="nx">chopstick</span><span class="p">[</span><span class="nx">no</span><span class="p">].</span><span class="nf">Unlock</span><span class="p">()</span> <span class="c1">// 放回左边的筷子
+</span><span class="c1"></span>
+		<span class="nx">time</span><span class="p">.</span><span class="nf">Sleep</span><span class="p">(</span><span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="p">)</span> <span class="c1">// 思考
+</span><span class="c1"></span>	<span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div><h3 id="常规解法-限制同时就餐的数量">常规解法-限制同时就餐的数量</h3>
+<p>限制只能有四个人有获得筷子的权利。<br>
+此处循环等待失效，不会造成死锁。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">var</span> <span class="p">(</span>
+	<span class="nx">count</span>     <span class="kt">int</span>          <span class="p">=</span> <span class="mi">0</span> <span class="c1">// 就餐的和等待就餐的个数
+</span><span class="c1"></span>	<span class="nx">mutex</span>     <span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span>   <span class="p">=</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span><span class="p">{}</span>
+	<span class="nx">chopstick</span> <span class="p">[]</span><span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span> <span class="p">=</span> <span class="nb">make</span><span class="p">([]</span><span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+<span class="p">)</span>
+
+<span class="kd">func</span> <span class="nf">ph</span><span class="p">(</span><span class="nx">no</span> <span class="kt">int</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">for</span> <span class="p">{</span>
+		<span class="nx">mutex</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
+		<span class="nx">count</span><span class="o">++</span>
+		<span class="k">for</span> <span class="nx">count</span> <span class="o">==</span> <span class="mi">5</span> <span class="p">{</span> <span class="c1">// 如果已经有四个进入了就等待
+</span><span class="c1"></span>			<span class="nx">mutex</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
+			<span class="nx">time</span><span class="p">.</span><span class="nf">Sleep</span><span class="p">(</span><span class="nx">time</span><span class="p">.</span><span class="nx">Millisecond</span><span class="p">)</span>
+			<span class="nx">mutex</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
+		<span class="p">}</span>
+		<span class="nx">mutex</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
+
+		<span class="c1">// 和上一个例子相同 不多做解释
+</span><span class="c1"></span>		<span class="nx">chopstick</span><span class="p">[</span><span class="nx">no</span><span class="p">].</span><span class="nf">Lock</span><span class="p">()</span>
+		<span class="nx">chopstick</span><span class="p">[(</span><span class="nx">no</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">%</span><span class="mi">5</span><span class="p">].</span><span class="nf">Lock</span><span class="p">()</span>
+		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;%d eating\n&#34;</span><span class="p">,</span> <span class="nx">no</span><span class="p">)</span>
+		<span class="nx">chopstick</span><span class="p">[(</span><span class="nx">no</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">%</span><span class="mi">5</span><span class="p">].</span><span class="nf">Unlock</span><span class="p">()</span>
+		<span class="nx">chopstick</span><span class="p">[</span><span class="nx">no</span><span class="p">].</span><span class="nf">Unlock</span><span class="p">()</span>
+
+		<span class="c1">// 计数器减一
+</span><span class="c1"></span>		<span class="nx">mutex</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
+		<span class="nx">count</span><span class="o">--</span>
+		<span class="nx">mutex</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
+
+		<span class="nx">time</span><span class="p">.</span><span class="nf">Sleep</span><span class="p">(</span><span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="p">)</span> <span class="c1">// 思考
+</span><span class="c1"></span>	<span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div><h3 id="常规解法-同时获取两根筷子">常规解法-同时获取两根筷子</h3>
+<p>哲学家尝试拿起两根筷子，在他尝试时候，其他人只能放下筷子，不能拿起筷子。
+破坏了死锁条件的持有并等待。<br>
+注意：虽然筷子是一根根拿起的，但是我们用互斥锁保护了临界区，所以在外界看来是同时拿起的。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">var</span> <span class="p">(</span>
+	<span class="nx">chopstick</span> <span class="p">[]</span><span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span> <span class="p">=</span> <span class="nb">make</span><span class="p">([]</span><span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+	<span class="nx">mutex</span>     <span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span>   <span class="p">=</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span><span class="p">{}</span>
+<span class="p">)</span>
+
+<span class="kd">func</span> <span class="nf">ph</span><span class="p">(</span><span class="nx">no</span> <span class="kt">int</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">for</span> <span class="p">{</span>
+		<span class="nx">mutex</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span> <span class="c1">// 一次性申请两个资源
+</span><span class="c1"></span>		<span class="nx">chopstick</span><span class="p">[</span><span class="nx">no</span><span class="p">].</span><span class="nf">Lock</span><span class="p">()</span>
+		<span class="nx">chopstick</span><span class="p">[(</span><span class="nx">no</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">%</span><span class="mi">5</span><span class="p">].</span><span class="nf">Lock</span><span class="p">()</span>
+		<span class="nx">mutex</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
+
+		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;%d eating\n&#34;</span><span class="p">,</span> <span class="nx">no</span><span class="p">)</span>
+
+		<span class="nx">chopstick</span><span class="p">[(</span><span class="nx">no</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">%</span><span class="mi">5</span><span class="p">].</span><span class="nf">Unlock</span><span class="p">()</span>
+		<span class="nx">chopstick</span><span class="p">[</span><span class="nx">no</span><span class="p">].</span><span class="nf">Unlock</span><span class="p">()</span>
+
+		<span class="nx">time</span><span class="p">.</span><span class="nf">Sleep</span><span class="p">(</span><span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="p">)</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div><h3 id="常规解法-奇偶编号">常规解法-奇偶编号</h3>
+<p>自己思考后试着写一下。</p>
+<h3 id="简化为生产者消费者问题">简化为生产者消费者问题</h3>
+<p>安排一个管理者,所有哲学家吃饭时要想管理者申请。<br>
+如果管理者发现资源不够，就让他等待。<br>
+其实就是上面的同时取根筷子（同时分配所有资源）。</p>
+<h2 id="吸烟者问题">吸烟者问题</h2>
+<p><strong>问题描述：</strong>
+一根烟需要烟草、烟纸和胶水才能制作成。
+吸烟者1： 有烟草，需要胶水和烟纸
+吸烟者2： 有烟纸，需要烟草和胶水
+吸烟者3： 有胶水，需要烟草和烟纸
+供应者： 每次随机提供三种材料中的两种，只允许同时取走所提供的两种材料。等取走了材料的人抽完了才放下一组材料。</p>
+<p>比较简单，不需要分析，直接看代码。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">var</span> <span class="p">(</span>
+	<span class="nx">offer1</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span> <span class="p">=</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span><span class="p">{}</span> <span class="c1">// 第一类资源，拥有烟草和纸
+</span><span class="c1"></span>	<span class="nx">offer2</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span> <span class="p">=</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span><span class="p">{}</span> <span class="c1">// 第二类资源
+</span><span class="c1"></span>	<span class="nx">offer3</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span> <span class="p">=</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span><span class="p">{}</span> <span class="c1">// 第三类资源
+</span><span class="c1"></span>	<span class="nx">finish</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span> <span class="p">=</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span><span class="p">{}</span> <span class="c1">// 抽烟动作完成
+</span><span class="c1"></span><span class="p">)</span>
+
+<span class="kd">func</span> <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">offer1</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span> <span class="c1">// 初始化
+</span><span class="c1"></span>	<span class="nx">offer2</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
+	<span class="nx">offer3</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">supplier</span><span class="p">()</span> <span class="p">{</span>
+	<span class="k">for</span> <span class="p">{</span>
+		<span class="nx">rand</span> <span class="o">:=</span> <span class="nx">rand</span><span class="p">.</span><span class="nf">Intn</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="c1">// 生成一个随机数来模拟
+</span><span class="c1"></span>		<span class="k">switch</span> <span class="nx">rand</span> <span class="p">{</span>
+		<span class="k">case</span> <span class="mi">0</span><span class="p">:</span>
+			<span class="nx">offer1</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span> <span class="c1">// 提供胶水和烟纸
+</span><span class="c1"></span>		<span class="k">case</span> <span class="mi">1</span><span class="p">:</span>
+			<span class="nx">offer2</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span> <span class="c1">// 提供烟草和胶水
+</span><span class="c1"></span>		<span class="k">case</span> <span class="mi">2</span><span class="p">:</span>
+			<span class="nx">offer3</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span> <span class="c1">// 提供烟草和烟纸
+</span><span class="c1"></span>		<span class="k">default</span><span class="p">:</span>
+		<span class="p">}</span>
+		<span class="nx">finish</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span> <span class="c1">// 等待抽烟者抽完烟
+</span><span class="c1"></span>	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">smoker1</span><span class="p">()</span> <span class="p">{</span> <span class="c1">// 吸烟者1
+</span><span class="c1"></span>	<span class="k">for</span> <span class="p">{</span>
+		<span class="nx">offer1</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
+		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;smoker1&#34;</span><span class="p">)</span>
+		<span class="nx">finish</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">smoker2</span><span class="p">()</span> <span class="p">{</span> <span class="c1">// 吸烟者2
+</span><span class="c1"></span>	<span class="k">for</span> <span class="p">{</span>
+		<span class="nx">offer2</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
+		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;smoker2&#34;</span><span class="p">)</span>
+		<span class="nx">finish</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">smoker3</span><span class="p">()</span> <span class="p">{</span> <span class="c1">// 吸烟者3
+</span><span class="c1"></span>	<span class="k">for</span> <span class="p">{</span>
+		<span class="nx">offer3</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
+		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;smoker3&#34;</span><span class="p">)</span>
+		<span class="nx">finish</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div><h2 id="解决同步问题的常规方法">解决同步问题的常规方法</h2>
+<p>一般，解决同步问题只需要掌握互斥锁和条件变量（同样的简单）就可以了。<br>
+但是如果在代码中大量的使用mutex和cond无疑是用小刀砍大树。<br>
+正确的做法是使用更高级的组件。看到这里，读者可以自己写一个线程安全的消息队列。</p>
+<h2 id="参考">参考</h2>
+<p>[1] 王道论坛. 2021年·操作系统考研复习指导. 电子工业出版社
+[2] 陈硕. Linux多线程编程. 电子工业出版社
+[3] 宋劲杉. Linux C编程一站式学习</p>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2020-11-18</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"></div>
+            <div class="post-info-share">
+                <span></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/">并发编程</a>,&nbsp;<a href="/tags/go/">Go</a>,&nbsp;<a href="/tags/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/">操作系统</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/posts/note/%E5%90%8C%E6%97%B6%E5%A4%84%E7%90%86tcp%E5%92%8Cudp/" class="prev" rel="prev" title="同时处理TCP和UDP"><i class="fas fa-angle-left fa-fw"></i>同时处理TCP和UDP</a></div>
+</div>
+</article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.74.3">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2020</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://github.com/haunanz" target="_blank">haunanz</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="/lib/smooth-scroll/smooth-scroll.min.js"></script><script type="text/javascript" src="/lib/lazysizes/lazysizes.min.js"></script><script type="text/javascript" src="/lib/clipboard/clipboard.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":-1},"comment":{}};</script><script type="text/javascript" src="/js/theme.min.js"></script></body>
+</html>
