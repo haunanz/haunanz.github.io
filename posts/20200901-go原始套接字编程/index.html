@@ -1,452 +1,78 @@
-<!DOCTYPE html>
-<html lang="zh-cn" class="light-theme">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Go原始套接字编程 | 居然是你的的博客呀</title>
-    <meta name="description" content="居然是你的的博客呀">
-    <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/syntax.css">
-    <link rel="stylesheet" href="/css/toc.css">
-    <link rel="stylesheet" href="/css/content.css">
-    <script>
-        
-        document.addEventListener('DOMContentLoaded', function() {
-            const themeToggle = document.getElementById('theme-toggle');
-            if (themeToggle) {
-                themeToggle.addEventListener('click', function() {
-                    const html = document.documentElement;
-                    if (html.classList.contains('light-theme')) {
-                        html.classList.remove('light-theme');
-                        html.classList.add('dark-theme');
-                        localStorage.setItem('theme', 'dark');
-                    } else {
-                        html.classList.remove('dark-theme');
-                        html.classList.add('light-theme');
-                        localStorage.setItem('theme', 'light');
-                    }
-                });
-            }
-
-            
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            document.documentElement.classList.remove('light-theme', 'dark-theme');
-            document.documentElement.classList.add(savedTheme + '-theme');
-        });
-    </script>
-</head>
-<body>
-    <div class="container">
-        
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <a href="https://haunanz.github.io/" class="blog-title">居然是你的的博客呀</a>
-            </div>
-            <nav class="sidebar-nav">
-                <ul>
-                    
-                    <li><a href="/posts/" >所有文章</a></li>
-                    
-                    <li><a href="/tags/" >标签</a></li>
-                    
-                    <li><a href="/categories/" >分类</a></li>
-                    
-                    <li><a href="/about/" >关于</a></li>
-                    
-                </ul>
-                <div class="theme-switcher">
-                    <button id="theme-toggle" aria-label="切换主题">
-                        <span class="theme-icon">🌓</span>
-                    </button>
-                </div>
-            </nav>
-        </aside>
-
-        
-        <main class="content">
-            
-<div class="article-wrapper">
-    
-    <div class="toc-container">
-        <div class="toc-header">目录</div>
-        <nav id="table-of-contents" class="toc" aria-label="文章目录">
-            
-        </nav>
-    </div>
-
-    <article class="article">
-        <header class="article-header">
-            <h1 class="article-title">Go原始套接字编程</h1>
-            <div class="article-meta">
-                <time datetime="2020-09-01T16:19:25&#43;08:00">2020-09-01</time>
-                
-                <div class="tags" style="display: inline-block; margin-left: 1rem;">
-                    
-                    <a href="/tags/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B" class="tag">网络编程</a>
-                    
-                    <a href="/tags/go%E8%AF%AD%E8%A8%80" class="tag">GO语言</a>
-                    
-                </div>
-                
-            </div>
-        </header>
-        <div class="article-content">
-            <blockquote>
-<p><strong>请注意</strong>，本文档的运行环境是Linux。</p>
-<p>在Windows环境下注意系统调用的接口有差别。</p>
-</blockquote>
-<p>两个计算机如何在网络中定位彼此的位置呢？计算机中的进程如何在网络中定位和自己对话的进程呢？ 通过套接字就可以唯一定位两个通信的进程。<br>
-套接字一般来说就是： IP地址 + 端口号。<br>
-IP地址唯一确定计算机的地址，端口号唯一确定计算机中的一个进程。 IPv4约有40亿个地址。每个计算机系统的端口号从0-65535。（当然可以通过配置网卡来获得多个地址，但每个地址接口的上限都是65535）</p>
-<p>套接字由操作系统提供和维护，当程序向系统申请时，系统会返回一个文件描述符。通过这个描述符就可以进行通信相关的一系列操作。</p>
-<p>一般来说，使用套接字进行通信时，由一方扮演服务方，另一方扮演客户方。<br>
-服务方往往通过监听端口被动的接收连接，通过单个端口可以服务成千上万个连接。<br>
-客户方往往主动发起连接请求，每个连接都要消耗一个系统的端口号。</p>
-<h2 id="socket-向系统申请一个套接字">Socket 向系统申请一个套接字</h2>
-<p>申请套接字的这一步操作是为了让系统根据你设置的<strong>协议类型</strong>对套接字进行相应的初始化。<br>
-进行这个操作后，系统将会为你分配一个套接字，返回给你一个文件描述符。你可以使用这个文件描述符操作这个套接字。</p>
-<h3 id="syscallsocket">syscall.Socket</h3>
-<h3 id="地址族">地址族</h3>
-<table>
-  <thead>
-      <tr>
-          <th>地址族取值</th>
-          <th>描述</th>
-      </tr>
-  </thead>
-  <tbody>
-      <tr>
-          <td>AF_UNIX 或者 AF_LOCAL</td>
-          <td>本地通信</td>
-      </tr>
-      <tr>
-          <td>AF_INET</td>
-          <td>IPv4</td>
-      </tr>
-      <tr>
-          <td>AF_INET6</td>
-          <td>IPv6</td>
-      </tr>
-  </tbody>
-</table>
-<h3 id="套接字类型">套接字类型</h3>
-<table>
-  <thead>
-      <tr>
-          <th>套接字类型</th>
-          <th>描述</th>
-      </tr>
-  </thead>
-  <tbody>
-      <tr>
-          <td>SOCK_STREAM</td>
-          <td>面向字节流的，用于TCP协议</td>
-      </tr>
-      <tr>
-          <td>SOCK_DGRAM</td>
-          <td>面向数据报，用于UDP协议</td>
-      </tr>
-      <tr>
-          <td>SOCK_RAW</td>
-          <td>原始套接字，用于IP，ICMP等更加底层的协议</td>
-      </tr>
-  </tbody>
-</table>
-<h3 id="协议类型">协议类型</h3>
-<table>
-  <thead>
-      <tr>
-          <th>协议类型</th>
-          <th>描述</th>
-      </tr>
-  </thead>
-  <tbody>
-      <tr>
-          <td>IPPROTO_TCP</td>
-          <td>TCP协议</td>
-      </tr>
-      <tr>
-          <td>IPPROTO_UDP</td>
-          <td>UDP协议</td>
-      </tr>
-  </tbody>
-</table>
-<p>//TODO</p>
-<p>要注意的是，我们往往是和TCP协议打交道的，所以往往只使用</p>
-<h2 id="bind-将套接字地址和描述符绑定">Bind 将套接字地址和描述符绑定</h2>
-<p>向系统申请了套接字，那么套接字指向那个网络中的（本地）地址呢？<br>
-这取决于你绑定的地址。<br>
-这一步创建并绑定到套接字上。</p>
-<h3 id="创建套接字的地址">创建套接字的地址</h3>
-<p>源码：$GOROOT/src/syscall/syscall_unix.go</p>
-<p>可以直接创建<strong>SocketaddrInet4</strong>机构体，并初始化接口<strong>Port</strong>。 创建套接字的流程，使用内置函数<strong>copy()和net.ParseIP()<strong>来初始化</strong>SockaddrInet4.Addr</strong>。</p>
-<h3 id="syscallbind">syscall.Bind</h3>
-<h2 id="listen-监听端口">Listen 监听端口</h2>
-<p>服务器如何知晓外部想和自己建立连接呢？<br>
-通过监听对应的端口。</p>
-<h2 id="accept-接收并建立连接">Accept 接收并建立连接</h2>
-<p>通过监听，我们知道-有外部连接请求。如何描述对方呢？换句话说，如果我们接收了很多连接请求，如何区分这些连接呢？<br>
-我们想操作这些连接如何指定对象呢？<br>
-答案是套接字！和监听套接字一样的套接字。<br>
-还记得我们在文章开始说过吗：<strong>IP地址：端口</strong> 唯一确定在网络中的主机上运行的一个进程。<br>
-那么如何获得这个套接字呢？ Accept 其实自己也可以创建，但是操作系统帮我们处理了很多底层的东西，降低了实现网络通信的的复杂度。</p>
-<h2 id="connect-主动连接某个端口">Connect 主动连接某个端口</h2>
-<h2 id="read--write-传输字节流">Read &amp; Write 传输字节流</h2>
-<p>除了建立断开连接，那无外乎就是网络数据的读写了。读取请求，处理请求，返回处理结果。</p>
-<h2 id="recfromsendto-与readwrite的区别">RecFrom&amp;SendTo 与Read&amp;Write的区别</h2>
-<h2 id="shoutdown--close">Shoutdown &amp; Close</h2>
-<p>这里有两种关闭连接的方法。一种是<code>Close</code>另一种是<code>Shoutdown</code>。</p>
-<p>两者有何区别呢？<br>
-<code>Close</code>减少一个文件描述符的指向，当文件描述符的指向为0时关闭。<br>
-一般正在多进程程序设计时才会考虑这个问题。一般情况下不用管。</p>
-<p><code>Shoutdown</code>会结合<code>how</code>一个flag来确定关闭方式。</p>
-<table>
-  <thead>
-      <tr>
-          <th>how</th>
-          <th>value</th>
-          <th>descript</th>
-      </tr>
-  </thead>
-  <tbody>
-      <tr>
-          <td>SHUT_RD</td>
-          <td>值为0</td>
-          <td>关闭连接的读。</td>
-      </tr>
-      <tr>
-          <td>SHUT_WR</td>
-          <td>值为1</td>
-          <td>关闭连接的写。</td>
-      </tr>
-      <tr>
-          <td>SHUT_RDWR</td>
-          <td>值为2</td>
-          <td>连接的读和写都关闭。</td>
-      </tr>
-  </tbody>
-</table>
-<h2 id="服务端示例-echo服务">服务端示例 Echo服务</h2>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kn">package</span><span class="w"> </span><span class="nx">main</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="kn">import</span><span class="w"> </span><span class="p">(</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="s">&#34;net&#34;</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="s">&#34;syscall&#34;</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="p">)</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="kd">func</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="nx">serverfd</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">syscall</span><span class="p">.</span><span class="nf">Socket</span><span class="p">(</span><span class="nx">syscall</span><span class="p">.</span><span class="nx">AF_INET</span><span class="p">,</span><span class="w"> </span><span class="nx">syscall</span><span class="p">.</span><span class="nx">SOCK_STREAM</span><span class="p">,</span><span class="w"> </span><span class="nx">syscall</span><span class="p">.</span><span class="nx">IPPROTO_TCP</span><span class="p">)</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="nf">doErr</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="k">defer</span><span class="w"> </span><span class="nx">syscall</span><span class="p">.</span><span class="nf">Close</span><span class="p">(</span><span class="nx">serverfd</span><span class="p">)</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="nx">addr</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">syscall</span><span class="p">.</span><span class="nx">SockaddrInet4</span><span class="p">{</span><span class="nx">Port</span><span class="p">:</span><span class="w"> </span><span class="mi">8080</span><span class="p">}</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="nb">copy</span><span class="p">(</span><span class="nx">addr</span><span class="p">.</span><span class="nx">Addr</span><span class="p">[:],</span><span class="w"> </span><span class="nx">net</span><span class="p">.</span><span class="nf">ParseIP</span><span class="p">(</span><span class="s">&#34;0.0.0.0&#34;</span><span class="p">).</span><span class="nf">To4</span><span class="p">())</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="nx">err</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">syscall</span><span class="p">.</span><span class="nf">Bind</span><span class="p">(</span><span class="nx">serverfd</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">addr</span><span class="p">)</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="nf">doErr</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="nx">err</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">syscall</span><span class="p">.</span><span class="nf">Listen</span><span class="p">(</span><span class="nx">serverfd</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">)</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="nf">doErr</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="k">for</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="nx">clientfd</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">syscall</span><span class="p">.</span><span class="nf">Accept</span><span class="p">(</span><span class="nx">serverfd</span><span class="p">)</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="nf">doErr</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="kd">var</span><span class="w"> </span><span class="nx">buf</span><span class="w"> </span><span class="p">[</span><span class="mi">1024</span><span class="p">]</span><span class="kt">byte</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="nx">n</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">syscall</span><span class="p">.</span><span class="nf">Read</span><span class="p">(</span><span class="nx">clientfd</span><span class="p">,</span><span class="w"> </span><span class="nx">buf</span><span class="p">[:])</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="nf">doErr</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="c1">// if n==0 {</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="c1">// }</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="nx">n</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">syscall</span><span class="p">.</span><span class="nf">Write</span><span class="p">(</span><span class="nx">clientfd</span><span class="p">,</span><span class="w"> </span><span class="nx">buf</span><span class="p">[:</span><span class="nx">n</span><span class="p">])</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="nx">syscall</span><span class="p">.</span><span class="nf">Close</span><span class="p">(</span><span class="nx">clientfd</span><span class="p">)</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="p">}</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="kd">func</span><span class="w"> </span><span class="nf">doErr</span><span class="p">(</span><span class="nx">err</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="nb">panic</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="p">}</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
-</span></span></span></code></pre></div><h2 id="客户端示例-标准输入输出">客户端示例 标准输入输出</h2>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kn">package</span><span class="w"> </span><span class="nx">main</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="kn">import</span><span class="w"> </span><span class="p">(</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="s">&#34;fmt&#34;</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="s">&#34;net&#34;</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="s">&#34;syscall&#34;</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="p">)</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="kd">func</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="nx">fd</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">syscall</span><span class="p">.</span><span class="nf">Socket</span><span class="p">(</span><span class="nx">syscall</span><span class="p">.</span><span class="nx">AF_INET</span><span class="p">,</span><span class="w"> </span><span class="nx">syscall</span><span class="p">.</span><span class="nx">SOCK_STREAM</span><span class="p">,</span><span class="w"> </span><span class="nx">syscall</span><span class="p">.</span><span class="nx">IPPROTO_TCP</span><span class="p">)</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="nf">doErr</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="k">defer</span><span class="w"> </span><span class="nx">syscall</span><span class="p">.</span><span class="nf">Close</span><span class="p">(</span><span class="nx">fd</span><span class="p">)</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="nx">addr</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">syscall</span><span class="p">.</span><span class="nx">SockaddrInet4</span><span class="p">{</span><span class="nx">Port</span><span class="p">:</span><span class="w"> </span><span class="mi">8080</span><span class="p">}</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="nb">copy</span><span class="p">(</span><span class="nx">addr</span><span class="p">.</span><span class="nx">Addr</span><span class="p">[:],</span><span class="w"> </span><span class="nx">net</span><span class="p">.</span><span class="nf">ParseIP</span><span class="p">(</span><span class="s">&#34;0.0.0.0&#34;</span><span class="p">).</span><span class="nf">To4</span><span class="p">())</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="nx">err</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">syscall</span><span class="p">.</span><span class="nf">Connect</span><span class="p">(</span><span class="nx">fd</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">addr</span><span class="p">)</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="nf">doErr</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="nx">str</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="s">&#34;&#34;</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Scanf</span><span class="p">(</span><span class="s">&#34;%s&#34;</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">str</span><span class="p">)</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="nx">n</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">syscall</span><span class="p">.</span><span class="nf">Write</span><span class="p">(</span><span class="nx">fd</span><span class="p">,</span><span class="w"> </span><span class="p">[]</span><span class="nb">byte</span><span class="p">(</span><span class="nx">str</span><span class="p">))</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;%d byte to Send\n&#34;</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">)</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="kd">var</span><span class="w"> </span><span class="nx">buf</span><span class="w"> </span><span class="p">[</span><span class="mi">1024</span><span class="p">]</span><span class="kt">byte</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="nx">n</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">syscall</span><span class="p">.</span><span class="nf">Read</span><span class="p">(</span><span class="nx">fd</span><span class="p">,</span><span class="w"> </span><span class="nx">buf</span><span class="p">[:])</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;%d byte to recive\nContent:%s\n&#34;</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">,</span><span class="w"> </span><span class="nb">string</span><span class="p">(</span><span class="nx">buf</span><span class="p">[:</span><span class="nx">n</span><span class="p">]))</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="kd">func</span><span class="w"> </span><span class="nf">doErr</span><span class="p">(</span><span class="nx">err</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="nb">panic</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="p">}</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
-</span></span></span></code></pre></div><h2 id="参考">参考</h2>
-<blockquote>
-<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>1</mn></mrow><annotation encoding="application/x-tex">1</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">1</span></span></span></span></span><p>. <a href="https://blog.csdn.net/lgp88/article/details/7176509">linux网络编程之shutdown() 与 close()函数详解</a><br>
-</p>
-<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>2</mn></mrow><annotation encoding="application/x-tex">2</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">2</span></span></span></span></span><p>. <a href="https://www.jianshu.com/p/111adfe8c686">旅行之间 . Linux 网络编程基础</a></p>
-</blockquote>
-
-        </div>
-    </article>
-
-  
-</div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    
-    const headings = document.querySelectorAll('.article-content h2, .article-content h3, .article-content h4, .article-content h5, .article-content h6');
-    if (headings.length === 0) {
-        document.querySelector('.toc-container').style.display = 'none';
-        return;
-    }
-
-    const toc = document.getElementById('table-of-contents');
-
-    
-    const tocList = document.createElement('ul');
-    tocList.className = 'toc-list';
-    toc.appendChild(tocList);
-
-    headings.forEach((heading, index) => {
-        
-        const level = parseInt(heading.tagName.charAt(1));
-
-        
-        if (!heading.id) {
-            heading.id = 'heading-' + index;
-        }
-
-        
-        const link = document.createElement('a');
-        link.href = '#' + heading.id;
-        link.textContent = heading.textContent;
-        link.className = 'toc-link';
-
-        
-        const li = document.createElement('li');
-        li.className = 'toc-item';
-        li.appendChild(link);
-
-        
-        li.classList.add('toc-level-' + level);
-
-        
-        tocList.appendChild(li);
-
-        
-        const anchor = document.createElement('a');
-        anchor.className = 'heading-anchor';
-        anchor.href = '#' + heading.id;
-        anchor.innerHTML = '#';
-        anchor.style.marginLeft = '0.5rem';
-        anchor.style.opacity = '0';
-        anchor.style.transition = 'opacity 0.2s';
-        anchor.style.textDecoration = 'none';
-        anchor.style.color = 'var(--light-link)';
-        heading.style.position = 'relative';
-        heading.appendChild(anchor);
-
-        
-        heading.addEventListener('mouseenter', function() {
-            anchor.style.opacity = '1';
-        });
-        heading.addEventListener('mouseleave', function() {
-            anchor.style.opacity = '0';
-        });
-    });
-
-    
-    function highlightTocOnScroll() {
-        const tocLinks = document.querySelectorAll('.toc-link');
-        let currentActive = null;
-
-        
-        for (let i = headings.length - 1; i >= 0; i--) {
-            const heading = headings[i];
-            const rect = heading.getBoundingClientRect();
-            if (rect.top <= 150) { 
-                currentActive = heading.id;
-                break;
-            }
-        }
-
-        
-        tocLinks.forEach(link => {
-            link.classList.remove('active');
-            if (link.getAttribute('href') === '#' + currentActive) {
-                link.classList.add('active');
-
-                
-                const tocContainer = document.querySelector('.toc-container');
-                const linkRect = link.getBoundingClientRect();
-                const containerRect = tocContainer.getBoundingClientRect();
-
-                if (linkRect.bottom > containerRect.bottom || linkRect.top < containerRect.top) {
-                    link.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-            }
-        });
-    }
-
-    
-    window.addEventListener('scroll', highlightTocOnScroll);
-    highlightTocOnScroll(); 
-
-    
-    document.querySelectorAll('.toc-link').forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            const targetId = this.getAttribute('href');
-            const targetElement = document.querySelector(targetId);
-            if (targetElement) {
-                const headerHeight = document.querySelector('.sidebar').offsetHeight;
-                const targetPosition = targetElement.offsetTop - headerHeight - 20;
-
-                window.scrollTo({
-                    top: targetPosition,
-                    behavior: 'smooth'
-                });
-
-                
-                history.pushState(null, null, targetId);
-            }
-        });
-    });
-});
-</script>
-
-            <footer class="content-footer">
-                <p>&copy; 2026 Haunanz. Powered by <a href="https://gohugo.io">Hugo</a>.</p>
-            </footer>
-        </main>
-    </div>
-
-    
-    <script src="/js/codeblock.js"></script>
-</body>
-</html>
+<!doctype html><html lang=zh-cn class=light-theme><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Go原始套接字编程 | 居然是你的博客呀</title><meta name=description content="居然是你的博客呀"><link rel=stylesheet href=/css/style.css><link rel=stylesheet href=/css/syntax.css><link rel=stylesheet href=/css/toc.css><link rel=stylesheet href=/css/content.css><script>document.addEventListener("DOMContentLoaded",function(){const e=document.getElementById("theme-toggle");e&&e.addEventListener("click",function(){const e=document.documentElement;e.classList.contains("light-theme")?(e.classList.remove("light-theme"),e.classList.add("dark-theme"),localStorage.setItem("theme","dark")):(e.classList.remove("dark-theme"),e.classList.add("light-theme"),localStorage.setItem("theme","light"))});const t=localStorage.getItem("theme")||"light";document.documentElement.classList.remove("light-theme","dark-theme"),document.documentElement.classList.add(t+"-theme")})</script></head><body><div class=container><aside class=sidebar><div class=sidebar-header><a href=https://haunanz.github.io/ class=blog-title>居然是你的博客呀</a></div><nav class=sidebar-nav><ul><li><a href=/posts/>所有文章</a></li><li><a href=/tags/>标签</a></li><li><a href=/categories/>分类</a></li><li><a href=/about/>关于</a></li></ul><div class=theme-switcher><button id=theme-toggle aria-label=切换主题>
+<span class=theme-icon>🌓</span></button></div></nav></aside><main class=content><div class=article-wrapper><div class=toc-container><div class=toc-header>目录</div><nav id=table-of-contents class=toc aria-label=文章目录></nav></div><article class=article><header class=article-header><h1 class=article-title>Go原始套接字编程</h1><div class=article-meta><time datetime=2020-09-01T16:19:25+08:00>2020-09-01</time><div class=tags style=display:inline-block;margin-left:1rem><a href=/tags/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B class=tag>网络编程</a>
+<a href=/tags/go%E8%AF%AD%E8%A8%80 class=tag>GO语言</a></div></div></header><div class=article-content><blockquote><p><strong>请注意</strong>，本文档的运行环境是Linux。</p><p>在Windows环境下注意系统调用的接口有差别。</p></blockquote><p>两个计算机如何在网络中定位彼此的位置呢？计算机中的进程如何在网络中定位和自己对话的进程呢？ 通过套接字就可以唯一定位两个通信的进程。<br>套接字一般来说就是： IP地址 + 端口号。<br>IP地址唯一确定计算机的地址，端口号唯一确定计算机中的一个进程。 IPv4约有40亿个地址。每个计算机系统的端口号从0-65535。（当然可以通过配置网卡来获得多个地址，但每个地址接口的上限都是65535）</p><p>套接字由操作系统提供和维护，当程序向系统申请时，系统会返回一个文件描述符。通过这个描述符就可以进行通信相关的一系列操作。</p><p>一般来说，使用套接字进行通信时，由一方扮演服务方，另一方扮演客户方。<br>服务方往往通过监听端口被动的接收连接，通过单个端口可以服务成千上万个连接。<br>客户方往往主动发起连接请求，每个连接都要消耗一个系统的端口号。</p><h2 id=socket-向系统申请一个套接字>Socket 向系统申请一个套接字</h2><p>申请套接字的这一步操作是为了让系统根据你设置的<strong>协议类型</strong>对套接字进行相应的初始化。<br>进行这个操作后，系统将会为你分配一个套接字，返回给你一个文件描述符。你可以使用这个文件描述符操作这个套接字。</p><h3 id=syscallsocket>syscall.Socket</h3><h3 id=地址族>地址族</h3><table><thead><tr><th>地址族取值</th><th>描述</th></tr></thead><tbody><tr><td>AF_UNIX 或者 AF_LOCAL</td><td>本地通信</td></tr><tr><td>AF_INET</td><td>IPv4</td></tr><tr><td>AF_INET6</td><td>IPv6</td></tr></tbody></table><h3 id=套接字类型>套接字类型</h3><table><thead><tr><th>套接字类型</th><th>描述</th></tr></thead><tbody><tr><td>SOCK_STREAM</td><td>面向字节流的，用于TCP协议</td></tr><tr><td>SOCK_DGRAM</td><td>面向数据报，用于UDP协议</td></tr><tr><td>SOCK_RAW</td><td>原始套接字，用于IP，ICMP等更加底层的协议</td></tr></tbody></table><h3 id=协议类型>协议类型</h3><table><thead><tr><th>协议类型</th><th>描述</th></tr></thead><tbody><tr><td>IPPROTO_TCP</td><td>TCP协议</td></tr><tr><td>IPPROTO_UDP</td><td>UDP协议</td></tr></tbody></table><p>//TODO</p><p>要注意的是，我们往往是和TCP协议打交道的，所以往往只使用</p><h2 id=bind-将套接字地址和描述符绑定>Bind 将套接字地址和描述符绑定</h2><p>向系统申请了套接字，那么套接字指向那个网络中的（本地）地址呢？<br>这取决于你绑定的地址。<br>这一步创建并绑定到套接字上。</p><h3 id=创建套接字的地址>创建套接字的地址</h3><p>源码：$GOROOT/src/syscall/syscall_unix.go</p><p>可以直接创建<strong>SocketaddrInet4</strong>机构体，并初始化接口<strong>Port</strong>。 创建套接字的流程，使用内置函数<strong>copy()和net.ParseIP()<strong>来初始化</strong>SockaddrInet4.Addr</strong>。</p><h3 id=syscallbind>syscall.Bind</h3><h2 id=listen-监听端口>Listen 监听端口</h2><p>服务器如何知晓外部想和自己建立连接呢？<br>通过监听对应的端口。</p><h2 id=accept-接收并建立连接>Accept 接收并建立连接</h2><p>通过监听，我们知道-有外部连接请求。如何描述对方呢？换句话说，如果我们接收了很多连接请求，如何区分这些连接呢？<br>我们想操作这些连接如何指定对象呢？<br>答案是套接字！和监听套接字一样的套接字。<br>还记得我们在文章开始说过吗：<strong>IP地址：端口</strong> 唯一确定在网络中的主机上运行的一个进程。<br>那么如何获得这个套接字呢？ Accept 其实自己也可以创建，但是操作系统帮我们处理了很多底层的东西，降低了实现网络通信的的复杂度。</p><h2 id=connect-主动连接某个端口>Connect 主动连接某个端口</h2><h2 id=read--write-传输字节流>Read & Write 传输字节流</h2><p>除了建立断开连接，那无外乎就是网络数据的读写了。读取请求，处理请求，返回处理结果。</p><h2 id=recfromsendto-与readwrite的区别>RecFrom&amp;SendTo 与Read&amp;Write的区别</h2><h2 id=shoutdown--close>Shoutdown & Close</h2><p>这里有两种关闭连接的方法。一种是<code>Close</code>另一种是<code>Shoutdown</code>。</p><p>两者有何区别呢？<br><code>Close</code>减少一个文件描述符的指向，当文件描述符的指向为0时关闭。<br>一般正在多进程程序设计时才会考虑这个问题。一般情况下不用管。</p><p><code>Shoutdown</code>会结合<code>how</code>一个flag来确定关闭方式。</p><table><thead><tr><th>how</th><th>value</th><th>descript</th></tr></thead><tbody><tr><td>SHUT_RD</td><td>值为0</td><td>关闭连接的读。</td></tr><tr><td>SHUT_WR</td><td>值为1</td><td>关闭连接的写。</td></tr><tr><td>SHUT_RDWR</td><td>值为2</td><td>连接的读和写都关闭。</td></tr></tbody></table><h2 id=服务端示例-echo服务>服务端示例 Echo服务</h2><div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kn>package</span><span class=w> </span><span class=nx>main</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=kn>import</span><span class=w> </span><span class=p>(</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>	</span><span class=s>&#34;net&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>	</span><span class=s>&#34;syscall&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=kd>func</span><span class=w> </span><span class=nf>main</span><span class=p>()</span><span class=w> </span><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>	</span><span class=nx>serverfd</span><span class=p>,</span><span class=w> </span><span class=nx>err</span><span class=w> </span><span class=o>:=</span><span class=w> </span><span class=nx>syscall</span><span class=p>.</span><span class=nf>Socket</span><span class=p>(</span><span class=nx>syscall</span><span class=p>.</span><span class=nx>AF_INET</span><span class=p>,</span><span class=w> </span><span class=nx>syscall</span><span class=p>.</span><span class=nx>SOCK_STREAM</span><span class=p>,</span><span class=w> </span><span class=nx>syscall</span><span class=p>.</span><span class=nx>IPPROTO_TCP</span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>	</span><span class=nf>doErr</span><span class=p>(</span><span class=nx>err</span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>	</span><span class=k>defer</span><span class=w> </span><span class=nx>syscall</span><span class=p>.</span><span class=nf>Close</span><span class=p>(</span><span class=nx>serverfd</span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>	</span><span class=nx>addr</span><span class=w> </span><span class=o>:=</span><span class=w> </span><span class=nx>syscall</span><span class=p>.</span><span class=nx>SockaddrInet4</span><span class=p>{</span><span class=nx>Port</span><span class=p>:</span><span class=w> </span><span class=mi>8080</span><span class=p>}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>	</span><span class=nb>copy</span><span class=p>(</span><span class=nx>addr</span><span class=p>.</span><span class=nx>Addr</span><span class=p>[:],</span><span class=w> </span><span class=nx>net</span><span class=p>.</span><span class=nf>ParseIP</span><span class=p>(</span><span class=s>&#34;0.0.0.0&#34;</span><span class=p>).</span><span class=nf>To4</span><span class=p>())</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>	</span><span class=nx>err</span><span class=w> </span><span class=p>=</span><span class=w> </span><span class=nx>syscall</span><span class=p>.</span><span class=nf>Bind</span><span class=p>(</span><span class=nx>serverfd</span><span class=p>,</span><span class=w> </span><span class=o>&amp;</span><span class=nx>addr</span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>	</span><span class=nf>doErr</span><span class=p>(</span><span class=nx>err</span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>	</span><span class=nx>err</span><span class=w> </span><span class=p>=</span><span class=w> </span><span class=nx>syscall</span><span class=p>.</span><span class=nf>Listen</span><span class=p>(</span><span class=nx>serverfd</span><span class=p>,</span><span class=w> </span><span class=mi>10</span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>	</span><span class=nf>doErr</span><span class=p>(</span><span class=nx>err</span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>	</span><span class=k>for</span><span class=w> </span><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>		</span><span class=nx>clientfd</span><span class=p>,</span><span class=w> </span><span class=nx>_</span><span class=p>,</span><span class=w> </span><span class=nx>err</span><span class=w> </span><span class=o>:=</span><span class=w> </span><span class=nx>syscall</span><span class=p>.</span><span class=nf>Accept</span><span class=p>(</span><span class=nx>serverfd</span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>		</span><span class=nf>doErr</span><span class=p>(</span><span class=nx>err</span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>		</span><span class=kd>var</span><span class=w> </span><span class=nx>buf</span><span class=w> </span><span class=p>[</span><span class=mi>1024</span><span class=p>]</span><span class=kt>byte</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>		</span><span class=nx>n</span><span class=p>,</span><span class=w> </span><span class=nx>err</span><span class=w> </span><span class=o>:=</span><span class=w> </span><span class=nx>syscall</span><span class=p>.</span><span class=nf>Read</span><span class=p>(</span><span class=nx>clientfd</span><span class=p>,</span><span class=w> </span><span class=nx>buf</span><span class=p>[:])</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>		</span><span class=nf>doErr</span><span class=p>(</span><span class=nx>err</span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>		</span><span class=c1>// if n==0 {</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>		</span><span class=c1>// }</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>		</span><span class=nx>n</span><span class=p>,</span><span class=w> </span><span class=nx>err</span><span class=w> </span><span class=p>=</span><span class=w> </span><span class=nx>syscall</span><span class=p>.</span><span class=nf>Write</span><span class=p>(</span><span class=nx>clientfd</span><span class=p>,</span><span class=w> </span><span class=nx>buf</span><span class=p>[:</span><span class=nx>n</span><span class=p>])</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>		</span><span class=nx>syscall</span><span class=p>.</span><span class=nf>Close</span><span class=p>(</span><span class=nx>clientfd</span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>	</span><span class=p>}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=p>}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=kd>func</span><span class=w> </span><span class=nf>doErr</span><span class=p>(</span><span class=nx>err</span><span class=w> </span><span class=kt>error</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>	</span><span class=k>if</span><span class=w> </span><span class=nx>err</span><span class=w> </span><span class=o>!=</span><span class=w> </span><span class=kc>nil</span><span class=w> </span><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>		</span><span class=nb>panic</span><span class=p>(</span><span class=nx>err</span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>	</span><span class=p>}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=p>}</span><span class=w>
+</span></span></span></code></pre></div><h2 id=客户端示例-标准输入输出>客户端示例 标准输入输出</h2><div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kn>package</span><span class=w> </span><span class=nx>main</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=kn>import</span><span class=w> </span><span class=p>(</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>	</span><span class=s>&#34;fmt&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>	</span><span class=s>&#34;net&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>	</span><span class=s>&#34;syscall&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=kd>func</span><span class=w> </span><span class=nf>main</span><span class=p>()</span><span class=w> </span><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>	</span><span class=nx>fd</span><span class=p>,</span><span class=w> </span><span class=nx>err</span><span class=w> </span><span class=o>:=</span><span class=w> </span><span class=nx>syscall</span><span class=p>.</span><span class=nf>Socket</span><span class=p>(</span><span class=nx>syscall</span><span class=p>.</span><span class=nx>AF_INET</span><span class=p>,</span><span class=w> </span><span class=nx>syscall</span><span class=p>.</span><span class=nx>SOCK_STREAM</span><span class=p>,</span><span class=w> </span><span class=nx>syscall</span><span class=p>.</span><span class=nx>IPPROTO_TCP</span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>	</span><span class=nf>doErr</span><span class=p>(</span><span class=nx>err</span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>	</span><span class=k>defer</span><span class=w> </span><span class=nx>syscall</span><span class=p>.</span><span class=nf>Close</span><span class=p>(</span><span class=nx>fd</span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>	</span><span class=nx>addr</span><span class=w> </span><span class=o>:=</span><span class=w> </span><span class=nx>syscall</span><span class=p>.</span><span class=nx>SockaddrInet4</span><span class=p>{</span><span class=nx>Port</span><span class=p>:</span><span class=w> </span><span class=mi>8080</span><span class=p>}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>	</span><span class=nb>copy</span><span class=p>(</span><span class=nx>addr</span><span class=p>.</span><span class=nx>Addr</span><span class=p>[:],</span><span class=w> </span><span class=nx>net</span><span class=p>.</span><span class=nf>ParseIP</span><span class=p>(</span><span class=s>&#34;0.0.0.0&#34;</span><span class=p>).</span><span class=nf>To4</span><span class=p>())</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>	</span><span class=nx>err</span><span class=w> </span><span class=p>=</span><span class=w> </span><span class=nx>syscall</span><span class=p>.</span><span class=nf>Connect</span><span class=p>(</span><span class=nx>fd</span><span class=p>,</span><span class=w> </span><span class=o>&amp;</span><span class=nx>addr</span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>	</span><span class=nf>doErr</span><span class=p>(</span><span class=nx>err</span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>	</span><span class=nx>str</span><span class=w> </span><span class=o>:=</span><span class=w> </span><span class=s>&#34;&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>	</span><span class=nx>fmt</span><span class=p>.</span><span class=nf>Scanf</span><span class=p>(</span><span class=s>&#34;%s&#34;</span><span class=p>,</span><span class=w> </span><span class=o>&amp;</span><span class=nx>str</span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>	</span><span class=nx>n</span><span class=p>,</span><span class=w> </span><span class=nx>err</span><span class=w> </span><span class=o>:=</span><span class=w> </span><span class=nx>syscall</span><span class=p>.</span><span class=nf>Write</span><span class=p>(</span><span class=nx>fd</span><span class=p>,</span><span class=w> </span><span class=p>[]</span><span class=nb>byte</span><span class=p>(</span><span class=nx>str</span><span class=p>))</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>	</span><span class=nx>fmt</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;%d byte to Send\n&#34;</span><span class=p>,</span><span class=w> </span><span class=nx>n</span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>	</span><span class=kd>var</span><span class=w> </span><span class=nx>buf</span><span class=w> </span><span class=p>[</span><span class=mi>1024</span><span class=p>]</span><span class=kt>byte</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>	</span><span class=nx>n</span><span class=p>,</span><span class=w> </span><span class=nx>err</span><span class=w> </span><span class=p>=</span><span class=w> </span><span class=nx>syscall</span><span class=p>.</span><span class=nf>Read</span><span class=p>(</span><span class=nx>fd</span><span class=p>,</span><span class=w> </span><span class=nx>buf</span><span class=p>[:])</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>	</span><span class=nx>fmt</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;%d byte to recive\nContent:%s\n&#34;</span><span class=p>,</span><span class=w> </span><span class=nx>n</span><span class=p>,</span><span class=w> </span><span class=nb>string</span><span class=p>(</span><span class=nx>buf</span><span class=p>[:</span><span class=nx>n</span><span class=p>]))</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=p>}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=kd>func</span><span class=w> </span><span class=nf>doErr</span><span class=p>(</span><span class=nx>err</span><span class=w> </span><span class=kt>error</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>	</span><span class=k>if</span><span class=w> </span><span class=nx>err</span><span class=w> </span><span class=o>!=</span><span class=w> </span><span class=kc>nil</span><span class=w> </span><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>		</span><span class=nb>panic</span><span class=p>(</span><span class=nx>err</span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>	</span><span class=p>}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=p>}</span><span class=w>
+</span></span></span></code></pre></div><h2 id=参考>参考</h2><blockquote><span class=katex-display><span class=katex><span class=katex-mathml><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>1</mn></mrow><annotation encoding="application/x-tex">1</annotation></semantics></math></span><span class=katex-html aria-hidden=true><span class=base><span class=strut style=height:.6444em></span><span class=mord>1</span></span></span></span></span><p>. <a href=https://blog.csdn.net/lgp88/article/details/7176509>linux网络编程之shutdown() 与 close()函数详解</a><br></p><span class=katex-display><span class=katex><span class=katex-mathml><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>2</mn></mrow><annotation encoding="application/x-tex">2</annotation></semantics></math></span><span class=katex-html aria-hidden=true><span class=base><span class=strut style=height:.6444em></span><span class=mord>2</span></span></span></span></span><p>. <a href=https://www.jianshu.com/p/111adfe8c686>旅行之间 . Linux 网络编程基础</a></p></blockquote></div></article></div><script>document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".article-content h2, .article-content h3, .article-content h4, .article-content h5, .article-content h6");if(e.length===0){document.querySelector(".toc-container").style.display="none";return}const s=document.getElementById("table-of-contents"),t=document.createElement("ul");t.className="toc-list",s.appendChild(t),e.forEach((e,n)=>{const a=parseInt(e.tagName.charAt(1));e.id||(e.id="heading-"+n);const o=document.createElement("a");o.href="#"+e.id,o.textContent=e.textContent,o.className="toc-link";const i=document.createElement("li");i.className="toc-item",i.appendChild(o),i.classList.add("toc-level-"+a),t.appendChild(i);const s=document.createElement("a");s.className="heading-anchor",s.href="#"+e.id,s.innerHTML="#",s.style.marginLeft="0.5rem",s.style.opacity="0",s.style.transition="opacity 0.2s",s.style.textDecoration="none",s.style.color="var(--light-link)",e.style.position="relative",e.appendChild(s),e.addEventListener("mouseenter",function(){s.style.opacity="1"}),e.addEventListener("mouseleave",function(){s.style.opacity="0"})});function n(){const n=document.querySelectorAll(".toc-link");let t=null;for(let n=e.length-1;n>=0;n--){const s=e[n],o=s.getBoundingClientRect();if(o.top<=150){t=s.id;break}}n.forEach(e=>{if(e.classList.remove("active"),e.getAttribute("href")==="#"+t){e.classList.add("active");const s=document.querySelector(".toc-container"),t=e.getBoundingClientRect(),n=s.getBoundingClientRect();(t.bottom>n.bottom||t.top<n.top)&&e.scrollIntoView({behavior:"smooth",block:"center"})}})}window.addEventListener("scroll",n),n(),document.querySelectorAll(".toc-link").forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const t=this.getAttribute("href"),n=document.querySelector(t);if(n){const e=document.querySelector(".sidebar").offsetHeight,s=n.offsetTop-e-20;window.scrollTo({top:s,behavior:"smooth"}),history.pushState(null,null,t)}})})})</script><footer class=content-footer><p>&copy; 2026 Haunanz. Powered by <a href=https://gohugo.io>Hugo</a>.</p></footer></main></div><script src=/js/codeblock.js></script></body></html>

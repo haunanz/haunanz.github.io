@@ -203,6 +203,7 @@ body {
     padding: 5rem 3rem 2rem;
     max-width: 1200px;
     align-self: center;
+    min-width: 0; /* 防止flex容器溢出 */
 }
 
 /* 文章列表样式 */
@@ -474,7 +475,7 @@ body {
     .content {
         margin-left: 0;
         margin-top: 0;
-        padding: 1.5rem;
+        padding: 1.5rem 2rem;
     }
 
     .sidebar-header {
@@ -487,6 +488,19 @@ body {
 
     .theme-switcher {
         margin-top: 0;
+    }
+}
+
+/* 超小屏幕额外保护 */
+@media (max-width: 480px) {
+    .content {
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+
+    /* 确保文章内容不溢出 */
+    .article-wrapper {
+        overflow-x: hidden;
     }
 }
 
@@ -640,6 +654,7 @@ div.highlight {
 /* 文章目录布局调整 */
 .article-wrapper {
     position: relative;
+    overflow-x: hidden; /* 防止内容水平溢出 */
 }
 
 /* 在桌面端，为目录腾出空间 */
@@ -648,6 +663,29 @@ div.highlight {
         padding-right: 300px;
     }
 }
+
+/* 确保文章内容不会溢出容器 */
+.article-content {
+    max-width: 100%;
+    overflow-wrap: break-word;
+}
+
+/* 防止图片、代码块等元素溢出 */
+.article-content img,
+.article-content video,
+.article-content iframe,
+.article-content pre,
+.article-content table {
+    max-width: 100%;
+    height: auto;
+}
+
+/* 代码块可能需要特别处理 */
+.article-content pre {
+    overflow-x: auto;
+    white-space: pre-wrap;
+}
+
 
 /* 深色主题下标题锚点样式 */
 .dark-theme .heading-anchor {
