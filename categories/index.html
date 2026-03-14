@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-cn" class="light-theme">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Categories | 居然是你的的博客呀</title>
+    <meta name="description" content="居然是你的的博客呀">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/syntax.css">
+    <link rel="stylesheet" href="/css/toc.css">
+    <link rel="stylesheet" href="/css/content.css">
+    <script>
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const themeToggle = document.getElementById('theme-toggle');
+            if (themeToggle) {
+                themeToggle.addEventListener('click', function() {
+                    const html = document.documentElement;
+                    if (html.classList.contains('light-theme')) {
+                        html.classList.remove('light-theme');
+                        html.classList.add('dark-theme');
+                        localStorage.setItem('theme', 'dark');
+                    } else {
+                        html.classList.remove('dark-theme');
+                        html.classList.add('light-theme');
+                        localStorage.setItem('theme', 'light');
+                    }
+                });
+            }
+
+            
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.classList.remove('light-theme', 'dark-theme');
+            document.documentElement.classList.add(savedTheme + '-theme');
+        });
+    </script>
+</head>
+<body>
+    <div class="container">
+        
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="https://haunanz.github.io/" class="blog-title">居然是你的的博客呀</a>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    
+                    <li><a href="/posts/" >所有文章</a></li>
+                    
+                    <li><a href="/tags/" >标签</a></li>
+                    
+                    <li><a href="/categories/" class="active">分类</a></li>
+                    
+                    <li><a href="/about/" >关于</a></li>
+                    
+                </ul>
+                <div class="theme-switcher">
+                    <button id="theme-toggle" aria-label="切换主题">
+                        <span class="theme-icon">🌓</span>
+                    </button>
+                </div>
+            </nav>
+        </aside>
+
+        
+        <main class="content">
+            
+<h1 style="margin-bottom: 2rem;">Categories</h1>
+<ul class="post-list">
+    
+</ul>
+
+            <footer class="content-footer">
+                <p>&copy; 2026 Haunanz. Powered by <a href="https://gohugo.io">Hugo</a>.</p>
+            </footer>
+        </main>
+    </div>
+
+    
+    <script src="/js/codeblock.js"></script>
+</body>
+</html>

@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-cn" class="light-theme">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>关于 | 居然是你的的博客呀</title>
+    <meta name="description" content="居然是你的的博客呀">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/syntax.css">
+    <link rel="stylesheet" href="/css/toc.css">
+    <link rel="stylesheet" href="/css/content.css">
+    <script>
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const themeToggle = document.getElementById('theme-toggle');
+            if (themeToggle) {
+                themeToggle.addEventListener('click', function() {
+                    const html = document.documentElement;
+                    if (html.classList.contains('light-theme')) {
+                        html.classList.remove('light-theme');
+                        html.classList.add('dark-theme');
+                        localStorage.setItem('theme', 'dark');
+                    } else {
+                        html.classList.remove('dark-theme');
+                        html.classList.add('light-theme');
+                        localStorage.setItem('theme', 'light');
+                    }
+                });
+            }
+
+            
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.classList.remove('light-theme', 'dark-theme');
+            document.documentElement.classList.add(savedTheme + '-theme');
+        });
+    </script>
+</head>
+<body>
+    <div class="container">
+        
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="https://haunanz.github.io/" class="blog-title">居然是你的的博客呀</a>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    
+                    <li><a href="/posts/" >所有文章</a></li>
+                    
+                    <li><a href="/tags/" >标签</a></li>
+                    
+                    <li><a href="/categories/" >分类</a></li>
+                    
+                    <li><a href="/about/" class="active">关于</a></li>
+                    
+                </ul>
+                <div class="theme-switcher">
+                    <button id="theme-toggle" aria-label="切换主题">
+                        <span class="theme-icon">🌓</span>
+                    </button>
+                </div>
+            </nav>
+        </aside>
+
+        
+        <main class="content">
+            
+<div class="article-wrapper">
+    
+    <div class="toc-container">
+        <div class="toc-header">目录</div>
+        <nav id="table-of-contents" class="toc" aria-label="文章目录">
+            
+        </nav>
+    </div>
+
+    <article class="article">
+        <header class="article-header">
+            <h1 class="article-title">关于</h1>
+            <div class="article-meta">
+                <time datetime="2026-03-13T15:17:08&#43;08:00">2026-03-13</time>
+                
+            </div>
+        </header>
+        <div class="article-content">
+            <p>这是一个使用Hugo搭建的静态博客。</p>
+<h2 id="关于我">关于我</h2>
+<p>我是<a href="https://github.com/haunanz">Haunanz</a>，这是我的个人博客。</p>
+<h2 id="关于这个博客">关于这个博客</h2>
+<ul>
+<li>使用Hugo生成静态页面</li>
+<li>使用Markdown编写内容</li>
+<li>支持标签和分类索引</li>
+</ul>
+
+        </div>
+    </article>
+
+  
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    
+    const headings = document.querySelectorAll('.article-content h2, .article-content h3, .article-content h4, .article-content h5, .article-content h6');
+    if (headings.length === 0) {
+        document.querySelector('.toc-container').style.display = 'none';
+        return;
+    }
+
+    const toc = document.getElementById('table-of-contents');
+
+    
+    const tocList = document.createElement('ul');
+    tocList.className = 'toc-list';
+    toc.appendChild(tocList);
+
+    headings.forEach((heading, index) => {
+        
+        const level = parseInt(heading.tagName.charAt(1));
+
+        
+        if (!heading.id) {
+            heading.id = 'heading-' + index;
+        }
+
+        
+        const link = document.createElement('a');
+        link.href = '#' + heading.id;
+        link.textContent = heading.textContent;
+        link.className = 'toc-link';
+
+        
+        const li = document.createElement('li');
+        li.className = 'toc-item';
+        li.appendChild(link);
+
+        
+        li.classList.add('toc-level-' + level);
+
+        
+        tocList.appendChild(li);
+
+        
+        const anchor = document.createElement('a');
+        anchor.className = 'heading-anchor';
+        anchor.href = '#' + heading.id;
+        anchor.innerHTML = '#';
+        anchor.style.marginLeft = '0.5rem';
+        anchor.style.opacity = '0';
+        anchor.style.transition = 'opacity 0.2s';
+        anchor.style.textDecoration = 'none';
+        anchor.style.color = 'var(--light-link)';
+        heading.style.position = 'relative';
+        heading.appendChild(anchor);
+
+        
+        heading.addEventListener('mouseenter', function() {
+            anchor.style.opacity = '1';
+        });
+        heading.addEventListener('mouseleave', function() {
+            anchor.style.opacity = '0';
+        });
+    });
+
+    
+    function highlightTocOnScroll() {
+        const tocLinks = document.querySelectorAll('.toc-link');
+        let currentActive = null;
+
+        
+        for (let i = headings.length - 1; i >= 0; i--) {
+            const heading = headings[i];
+            const rect = heading.getBoundingClientRect();
+            if (rect.top <= 150) { 
+                currentActive = heading.id;
+                break;
+            }
+        }
+
+        
+        tocLinks.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('href') === '#' + currentActive) {
+                link.classList.add('active');
+
+                
+                const tocContainer = document.querySelector('.toc-container');
+                const linkRect = link.getBoundingClientRect();
+                const containerRect = tocContainer.getBoundingClientRect();
+
+                if (linkRect.bottom > containerRect.bottom || linkRect.top < containerRect.top) {
+                    link.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        });
+    }
+
+    
+    window.addEventListener('scroll', highlightTocOnScroll);
+    highlightTocOnScroll(); 
+
+    
+    document.querySelectorAll('.toc-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const targetId = this.getAttribute('href');
+            const targetElement = document.querySelector(targetId);
+            if (targetElement) {
+                const headerHeight = document.querySelector('.sidebar').offsetHeight;
+                const targetPosition = targetElement.offsetTop - headerHeight - 20;
+
+                window.scrollTo({
+                    top: targetPosition,
+                    behavior: 'smooth'
+                });
+
+                
+                history.pushState(null, null, targetId);
+            }
+        });
+    });
+});
+</script>
+
+            <footer class="content-footer">
+                <p>&copy; 2026 Haunanz. Powered by <a href="https://gohugo.io">Hugo</a>.</p>
+            </footer>
+        </main>
+    </div>
+
+    
+    <script src="/js/codeblock.js"></script>
+</body>
+</html>

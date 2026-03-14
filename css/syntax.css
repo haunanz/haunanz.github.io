@@ -1,0 +1,511 @@
+/* Light+ 主题：背景白色，文字黑色，适用于浅色模式 */
+.light-theme .chroma {
+    background-color: #ffffff;
+    color: #000000;
+}
+
+/* 行号 */
+.light-theme .chroma .lnt,
+.light-theme .chroma .ln {
+    color: #237893;
+}
+
+/* 行高亮背景 */
+.light-theme .chroma .hl {
+    background-color: #e8f2fe;
+}
+
+/* 错误 */
+.light-theme .chroma .err {
+    color: #e51400;
+}
+
+/* 注释 */
+.light-theme .chroma .c,
+.light-theme .chroma .c1,
+.light-theme .chroma .cm,
+.light-theme .chroma .cs {
+    color: #008000;
+}
+
+/* 预处理注释 */
+.light-theme .chroma .cp,
+.light-theme .chroma .cpf {
+    color: #800000;
+}
+
+/* 关键字 */
+.light-theme .chroma .k,
+.light-theme .chroma .kc,
+.light-theme .chroma .kd,
+.light-theme .chroma .kn,
+.light-theme .chroma .kp,
+.light-theme .chroma .kr,
+.light-theme .chroma .kt {
+    color: #0000ff;
+}
+
+/* 运算符 */
+.light-theme .chroma .o,
+.light-theme .chroma .ow {
+    color: #000000;
+}
+
+/* 标点 */
+.light-theme .chroma .p {
+    color: #000000;
+}
+
+/* 数字 */
+.light-theme .chroma .m,
+.light-theme .chroma .mf,
+.light-theme .chroma .mh,
+.light-theme .chroma .mi,
+.light-theme .chroma .mo {
+    color: #098658;
+}
+
+/* 字符串 */
+.light-theme .chroma .s,
+.light-theme .chroma .s1,
+.light-theme .chroma .s2,
+.light-theme .chroma .sb,
+.light-theme .chroma .sc,
+.light-theme .chroma .dl {
+    color: #a31515;
+}
+
+/* 字符串中的转义 */
+.light-theme .chroma .se {
+    color: #800000;
+}
+
+/* 字符串插值 */
+.light-theme .chroma .si {
+    color: #800000;
+}
+
+/* 正则表达式 */
+.light-theme .chroma .sr {
+    color: #800000;
+}
+
+/* 文档字符串 */
+.light-theme .chroma .sd {
+    color: #008000;
+}
+
+/* 符号字符串 */
+.light-theme .chroma .ss {
+    color: #a31515;
+}
+
+/* 其他字符串 */
+.light-theme .chroma .sx,
+.light-theme .chroma .sa,
+.light-theme .chroma .sh {
+    color: #a31515;
+}
+
+/* 名称：一般标识符 */
+.light-theme .chroma .n {
+    color: #001080;
+}
+
+/* 名称：属性 */
+.light-theme .chroma .na {
+    color: #001080;
+}
+
+/* 名称：内置 */
+.light-theme .chroma .nb {
+    color: #0000ff;
+}
+
+/* 名称：内置伪类 */
+.light-theme .chroma .bp {
+    color: #001080;
+}
+
+/* 名称：类 */
+.light-theme .chroma .nc {
+    color: #2b91af;
+}
+
+/* 名称：常量 */
+.light-theme .chroma .no {
+    color: #001080;
+}
+
+/* 名称：装饰器 */
+.light-theme .chroma .nd {
+    color: #800000;
+}
+
+/* 名称：实体 */
+.light-theme .chroma .ni {
+    color: #000000;
+}
+
+/* 名称：异常 */
+.light-theme .chroma .ne {
+    color: #e51400;
+}
+
+/* 名称：函数 */
+.light-theme .chroma .nf {
+    color: #795e26;
+}
+
+/* 名称：标签 */
+.light-theme .chroma .nt {
+    color: #0000ff;
+}
+
+/* 名称：命名空间 */
+.light-theme .chroma .nn {
+    color: #2b91af;
+}
+
+/* 名称：其他 */
+.light-theme .chroma .nx {
+    color: #001080;
+}
+
+/* 名称：变量 */
+.light-theme .chroma .nv {
+    color: #001080;
+}
+
+/* 名称：变量实例 */
+.light-theme .chroma .vc,
+.light-theme .chroma .vg,
+.light-theme .chroma .vi {
+    color: #001080;
+}
+
+/* 通用插入 */
+.light-theme .chroma .gi {
+    color: #098658;
+    background-color: #e6ffe6;
+}
+
+/* 通用删除 */
+.light-theme .chroma .gd {
+    color: #a31515;
+    background-color: #ffe6e6;
+}
+
+/* 通用输出 */
+.light-theme .chroma .go {
+    color: #000000;
+}
+
+/* 通用下划线 */
+.light-theme .chroma .gl {
+    text-decoration: underline;
+}
+
+/* 通用提示符 */
+.light-theme .chroma .gp {
+    color: #000000;
+}
+
+/* 通用错误 */
+.light-theme .chroma .gr {
+    color: #e51400;
+}
+
+/* 通用强调 */
+.light-theme .chroma .ge {
+    font-style: italic;
+}
+
+/* 通用加粗 */
+.light-theme .chroma .gs {
+    font-weight: bold;
+}
+
+/* 通用标题 */
+.light-theme .chroma .gh {
+    color: #0000ff;
+}
+
+/* 通用子标题 */
+.light-theme .chroma .gu {
+    color: #0000ff;
+}
+
+/* 通用追溯 */
+.light-theme .chroma .gt {
+    color: #e51400;
+}
+
+/* 空白字符 */
+.light-theme .chroma .w {
+    color: #000000;
+}
+
+/* 行号表格相关 */
+.light-theme .chroma .lntd,
+.light-theme .chroma .lntable {
+    border-collapse: collapse;
+    padding: 0;
+}
+
+
+/* 深色风格=============== */
+/* Dark+ 主题：背景深灰，文字浅灰，适用于深色模式 */
+.dark-theme .chroma {
+    background-color: #1e1e1e;
+    color: #d4d4d4;
+}
+
+/* 行号 */
+.dark-theme .chroma .lnt,
+.dark-theme .chroma .ln {
+    color: #858585;
+}
+
+/* 行高亮背景 */
+.dark-theme .chroma .hl {
+    background-color: #2d2d2d;
+}
+
+/* 错误 */
+.dark-theme .chroma .err {
+    color: #f48771;
+}
+
+/* 注释 */
+.dark-theme .chroma .c,
+.dark-theme .chroma .c1,
+.dark-theme .chroma .cm,
+.dark-theme .chroma .cs {
+    color: #6a9955;
+}
+
+/* 预处理注释 */
+.dark-theme .chroma .cp,
+.dark-theme .chroma .cpf {
+    color: #c586c0;
+}
+
+/* 关键字 */
+.dark-theme .chroma .k,
+.dark-theme .chroma .kc,
+.dark-theme .chroma .kd,
+.dark-theme .chroma .kn,
+.dark-theme .chroma .kp,
+.dark-theme .chroma .kr,
+.dark-theme .chroma .kt {
+    color: #569cd6;
+}
+
+/* 运算符 */
+.dark-theme .chroma .o,
+.dark-theme .chroma .ow {
+    color: #d4d4d4;
+}
+
+/* 标点 */
+.dark-theme .chroma .p {
+    color: #d4d4d4;
+}
+
+/* 数字 */
+.dark-theme .chroma .m,
+.dark-theme .chroma .mf,
+.dark-theme .chroma .mh,
+.dark-theme .chroma .mi,
+.dark-theme .chroma .mo {
+    color: #b5cea8;
+}
+
+/* 字符串 */
+.dark-theme .chroma .s,
+.dark-theme .chroma .s1,
+.dark-theme .chroma .s2,
+.dark-theme .chroma .sb,
+.dark-theme .chroma .sc,
+.dark-theme .chroma .dl {
+    color: #ce9178;
+}
+
+/* 字符串中的转义 */
+.dark-theme .chroma .se {
+    color: #d7ba7d;
+}
+
+/* 字符串插值 */
+.dark-theme .chroma .si {
+    color: #d16969;
+}
+
+/* 正则表达式 */
+.dark-theme .chroma .sr {
+    color: #d16969;
+}
+
+/* 文档字符串 */
+.dark-theme .chroma .sd {
+    color: #6a9955;
+}
+
+/* 符号字符串 */
+.dark-theme .chroma .ss {
+    color: #ce9178;
+}
+
+/* 其他字符串 */
+.dark-theme .chroma .sx,
+.dark-theme .chroma .sa,
+.dark-theme .chroma .sh {
+    color: #ce9178;
+}
+
+/* 名称：一般标识符 */
+.dark-theme .chroma .n {
+    color: #9cdcfe;
+}
+
+/* 名称：属性 */
+.dark-theme .chroma .na {
+    color: #9cdcfe;
+}
+
+/* 名称：内置 */
+.dark-theme .chroma .nb {
+    color: #dcdcaa;
+}
+
+/* 名称：内置伪类 */
+.dark-theme .chroma .bp {
+    color: #9cdcfe;
+}
+
+/* 名称：类 */
+.dark-theme .chroma .nc {
+    color: #4ec9b0;
+}
+
+/* 名称：常量 */
+.dark-theme .chroma .no {
+    color: #9cdcfe;
+}
+
+/* 名称：装饰器 */
+.dark-theme .chroma .nd {
+    color: #c586c0;
+}
+
+/* 名称：实体 */
+.dark-theme .chroma .ni {
+    color: #d4d4d4;
+}
+
+/* 名称：异常 */
+.dark-theme .chroma .ne {
+    color: #f48771;
+}
+
+/* 名称：函数 */
+.dark-theme .chroma .nf {
+    color: #dcdcaa;
+}
+
+/* 名称：标签 */
+.dark-theme .chroma .nt {
+    color: #569cd6;
+}
+
+/* 名称：命名空间 */
+.dark-theme .chroma .nn {
+    color: #4ec9b0;
+}
+
+/* 名称：其他 */
+.dark-theme .chroma .nx {
+    color: #9cdcfe;
+}
+
+/* 名称：变量 */
+.dark-theme .chroma .nv {
+    color: #9cdcfe;
+}
+
+/* 名称：变量实例 */
+.dark-theme .chroma .vc,
+.dark-theme .chroma .vg,
+.dark-theme .chroma .vi {
+    color: #9cdcfe;
+}
+
+/* 通用插入 */
+.dark-theme .chroma .gi {
+    color: #b5cea8;
+    background-color: #1e3b1e;
+}
+
+/* 通用删除 */
+.dark-theme .chroma .gd {
+    color: #ce9178;
+    background-color: #3b1e1e;
+}
+
+/* 通用输出 */
+.dark-theme .chroma .go {
+    color: #d4d4d4;
+}
+
+/* 通用下划线 */
+.dark-theme .chroma .gl {
+    text-decoration: underline;
+}
+
+/* 通用提示符 */
+.dark-theme .chroma .gp {
+    color: #d4d4d4;
+}
+
+/* 通用错误 */
+.dark-theme .chroma .gr {
+    color: #f48771;
+}
+
+/* 通用强调 */
+.dark-theme .chroma .ge {
+    font-style: italic;
+}
+
+/* 通用加粗 */
+.dark-theme .chroma .gs {
+    font-weight: bold;
+}
+
+/* 通用标题 */
+.dark-theme .chroma .gh {
+    color: #569cd6;
+}
+
+/* 通用子标题 */
+.dark-theme .chroma .gu {
+    color: #569cd6;
+}
+
+/* 通用追溯 */
+.dark-theme .chroma .gt {
+    color: #f48771;
+}
+
+/* 空白字符 */
+.dark-theme .chroma .w {
+    color: #d4d4d4;
+}
+
+/* 行号表格相关 */
+.dark-theme .chroma .lntd,
+.dark-theme .chroma .lntable {
+    border-collapse: collapse;
+    padding: 0;
+}

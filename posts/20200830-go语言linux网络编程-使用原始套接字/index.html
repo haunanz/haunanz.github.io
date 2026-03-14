@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh-cn" class="light-theme">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Go语言Linux网络编程 使用原始套接字 | 居然是你的的博客呀</title>
+    <meta name="description" content="居然是你的的博客呀">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/syntax.css">
+    <link rel="stylesheet" href="/css/toc.css">
+    <link rel="stylesheet" href="/css/content.css">
+    <script>
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const themeToggle = document.getElementById('theme-toggle');
+            if (themeToggle) {
+                themeToggle.addEventListener('click', function() {
+                    const html = document.documentElement;
+                    if (html.classList.contains('light-theme')) {
+                        html.classList.remove('light-theme');
+                        html.classList.add('dark-theme');
+                        localStorage.setItem('theme', 'dark');
+                    } else {
+                        html.classList.remove('dark-theme');
+                        html.classList.add('light-theme');
+                        localStorage.setItem('theme', 'light');
+                    }
+                });
+            }
+
+            
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.classList.remove('light-theme', 'dark-theme');
+            document.documentElement.classList.add(savedTheme + '-theme');
+        });
+    </script>
+</head>
+<body>
+    <div class="container">
+        
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="https://haunanz.github.io/" class="blog-title">居然是你的的博客呀</a>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    
+                    <li><a href="/posts/" >所有文章</a></li>
+                    
+                    <li><a href="/tags/" >标签</a></li>
+                    
+                    <li><a href="/categories/" >分类</a></li>
+                    
+                    <li><a href="/about/" >关于</a></li>
+                    
+                </ul>
+                <div class="theme-switcher">
+                    <button id="theme-toggle" aria-label="切换主题">
+                        <span class="theme-icon">🌓</span>
+                    </button>
+                </div>
+            </nav>
+        </aside>
+
+        
+        <main class="content">
+            
+<div class="article-wrapper">
+    
+    <div class="toc-container">
+        <div class="toc-header">目录</div>
+        <nav id="table-of-contents" class="toc" aria-label="文章目录">
+            
+        </nav>
+    </div>
+
+    <article class="article">
+        <header class="article-header">
+            <h1 class="article-title">Go语言Linux网络编程 使用原始套接字</h1>
+            <div class="article-meta">
+                <time datetime="2020-08-30T16:19:25&#43;08:00">2020-08-30</time>
+                
+                <div class="tags" style="display: inline-block; margin-left: 1rem;">
+                    
+                    <a href="/tags/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B" class="tag">网络编程</a>
+                    
+                    <a href="/tags/go%E8%AF%AD%E8%A8%80" class="tag">GO语言</a>
+                    
+                </div>
+                
+            </div>
+        </header>
+        <div class="article-content">
+            <p>Go语言直接使用原始套接字编写网络程序。<br>
+想使用Go学习网络编程，但大多是教程都是从套接字开始讲起。但是GO提供了net包，屏蔽了底层的复杂性，让初学者不知到如何下手。<br>
+个人认为了解套接字编程还是有一定的必要的，虽然工作中都是使用现成的网络阔。<br>
+如果想编写自己的网络库，那么就必须得和原始套接字打交道了。</p>
+<h2 id="syscall">syscall</h2>
+<p>来看一下C语言版的套接字接口和Go语言版的套接字接口的对应。</p>
+<p>c语言版本的接口。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">socket</span><span class="p">(</span><span class="kt">int</span> <span class="n">domain</span><span class="p">,</span> <span class="kt">int</span> <span class="n">type</span><span class="p">,</span> <span class="kt">int</span> <span class="n">protocol</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">bind</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="k">const</span> <span class="k">struct</span> <span class="n">sockaddr</span> <span class="o">*</span> <span class="n">addr</span><span class="p">,</span> <span class="kt">socklen_t</span> <span class="n">addr_len</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">listen</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="kt">int</span> <span class="n">n</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">accept</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="k">struct</span> <span class="n">sockaddr</span> <span class="o">*</span> <span class="n">addr</span><span class="p">,</span> <span class="kt">socklen_t</span> <span class="o">*</span> <span class="n">addr_len</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">connect</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="k">const</span> <span class="k">struct</span> <span class="n">sockaddr</span> <span class="o">*</span> <span class="n">addr</span><span class="p">,</span> <span class="kt">socklen_t</span> <span class="n">addr_len</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="kt">ssize_t</span> <span class="nf">recv</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="n">buf</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">n</span><span class="p">,</span> <span class="kt">int</span> <span class="n">flags</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="kt">ssize_t</span> <span class="nf">send</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="n">buf</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">n</span><span class="p">,</span> <span class="kt">int</span> <span class="n">flags</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">close</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">shutdown</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="kt">int</span> <span class="n">howto</span><span class="p">);</span>
+</span></span></code></pre></div><p>go语言版本的接口。</p>
+<p>可以发现，两者的接口名称是一样的。 只是Go语言的接口是大写字母开头，因为Go语言的大写字母开头的函数才可以导出。</p>
+<h2 id="一个简单的echo服务">一个简单的echo服务</h2>
+<p>来源：https://gist.github.com/tevino/3a4f4ec4ea9d0ca66d4f</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kn">package</span><span class="w"> </span><span class="nx">main</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kn">import</span><span class="w"> </span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="s">&#34;fmt&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="s">&#34;net&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="s">&#34;os&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="s">&#34;syscall&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">const</span><span class="w"> </span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="nx">EPOLLET</span><span class="w">        </span><span class="p">=</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="mi">31</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="nx">MaxEpollEvents</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">32</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 接受一个文件描述符（连接）  </span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">func</span><span class="w"> </span><span class="nf">echo</span><span class="p">(</span><span class="nx">fd</span><span class="w"> </span><span class="kt">int</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="k">defer</span><span class="w"> </span><span class="nx">syscall</span><span class="p">.</span><span class="nf">Close</span><span class="p">(</span><span class="nx">fd</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="kd">var</span><span class="w"> </span><span class="nx">buf</span><span class="w"> </span><span class="p">[</span><span class="mi">32</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024</span><span class="p">]</span><span class="kt">byte</span><span class="w"> </span><span class="c1">// 分配缓存</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="k">for</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="nx">nbytes</span><span class="p">,</span><span class="w"> </span><span class="nx">e</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">syscall</span><span class="p">.</span><span class="nf">Read</span><span class="p">(</span><span class="nx">fd</span><span class="p">,</span><span class="w"> </span><span class="nx">buf</span><span class="p">[:])</span><span class="w"> </span><span class="c1">// 读</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="nx">nbytes</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">			</span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;&gt;&gt;&gt; %s&#34;</span><span class="p">,</span><span class="w"> </span><span class="nx">buf</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">			</span><span class="nx">syscall</span><span class="p">.</span><span class="nf">Write</span><span class="p">(</span><span class="nx">fd</span><span class="p">,</span><span class="w"> </span><span class="nx">buf</span><span class="p">[:</span><span class="nx">nbytes</span><span class="p">])</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">			</span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;&lt;&lt;&lt; %s&#34;</span><span class="p">,</span><span class="w"> </span><span class="nx">buf</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="nx">e</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="c1">// 错误 或 关闭连接 </span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">			</span><span class="k">break</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">func</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="kd">var</span><span class="w"> </span><span class="nx">event</span><span class="w"> </span><span class="nx">syscall</span><span class="p">.</span><span class="nx">EpollEvent</span><span class="w"> </span><span class="c1">// Epoll</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="kd">var</span><span class="w"> </span><span class="nx">events</span><span class="w"> </span><span class="p">[</span><span class="nx">MaxEpollEvents</span><span class="p">]</span><span class="nx">syscall</span><span class="p">.</span><span class="nx">EpollEvent</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c1">// 申请一个套接字</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="nx">fd</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">syscall</span><span class="p">.</span><span class="nf">Socket</span><span class="p">(</span><span class="nx">syscall</span><span class="p">.</span><span class="nx">AF_INET</span><span class="p">,</span><span class="w"> </span><span class="nx">syscall</span><span class="p">.</span><span class="nx">O_NONBLOCK</span><span class="p">|</span><span class="nx">syscall</span><span class="p">.</span><span class="nx">SOCK_STREAM</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="nx">os</span><span class="p">.</span><span class="nf">Exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="k">defer</span><span class="w"> </span><span class="nx">syscall</span><span class="p">.</span><span class="nf">Close</span><span class="p">(</span><span class="nx">fd</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c1">// 设置非阻塞</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">syscall</span><span class="p">.</span><span class="nf">SetNonblock</span><span class="p">(</span><span class="nx">fd</span><span class="p">,</span><span class="w"> </span><span class="kc">true</span><span class="p">);</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;setnonblock1: &#34;</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="nx">os</span><span class="p">.</span><span class="nf">Exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="nx">addr</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">syscall</span><span class="p">.</span><span class="nx">SockaddrInet4</span><span class="p">{</span><span class="nx">Port</span><span class="p">:</span><span class="w"> </span><span class="mi">2000</span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="nb">copy</span><span class="p">(</span><span class="nx">addr</span><span class="p">.</span><span class="nx">Addr</span><span class="p">[:],</span><span class="w"> </span><span class="nx">net</span><span class="p">.</span><span class="nf">ParseIP</span><span class="p">(</span><span class="s">&#34;0.0.0.0&#34;</span><span class="p">).</span><span class="nf">To4</span><span class="p">())</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nx">syscall</span><span class="p">.</span><span class="nf">Bind</span><span class="p">(</span><span class="nx">fd</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">addr</span><span class="p">)</span><span class="w"> </span><span class="c1">// Bind接口</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c1">// 监听</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nx">syscall</span><span class="p">.</span><span class="nf">Listen</span><span class="p">(</span><span class="nx">fd</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c1">// 创建一个Epoll对象 用于控制整个Epoll过程</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="nx">epfd</span><span class="p">,</span><span class="w"> </span><span class="nx">e</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">syscall</span><span class="p">.</span><span class="nf">EpollCreate1</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">e</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;epoll_create1: &#34;</span><span class="p">,</span><span class="w"> </span><span class="nx">e</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="nx">os</span><span class="p">.</span><span class="nf">Exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="k">defer</span><span class="w"> </span><span class="nx">syscall</span><span class="p">.</span><span class="nf">Close</span><span class="p">(</span><span class="nx">epfd</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c1">// 初始化监听端口</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="nx">event</span><span class="p">.</span><span class="nx">Events</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">syscall</span><span class="p">.</span><span class="nx">EPOLLIN</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="nx">event</span><span class="p">.</span><span class="nx">Fd</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">int32</span><span class="p">(</span><span class="nx">fd</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">e</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">syscall</span><span class="p">.</span><span class="nf">EpollCtl</span><span class="p">(</span><span class="nx">epfd</span><span class="p">,</span><span class="w"> </span><span class="nx">syscall</span><span class="p">.</span><span class="nx">EPOLL_CTL_ADD</span><span class="p">,</span><span class="w"> </span><span class="nx">fd</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">event</span><span class="p">);</span><span class="w"> </span><span class="nx">e</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;epoll_ctl: &#34;</span><span class="p">,</span><span class="w"> </span><span class="nx">e</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="nx">os</span><span class="p">.</span><span class="nf">Exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c1">// 事件循环</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="k">for</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="nx">nevents</span><span class="p">,</span><span class="w"> </span><span class="nx">e</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">syscall</span><span class="p">.</span><span class="nf">EpollWait</span><span class="p">(</span><span class="nx">epfd</span><span class="p">,</span><span class="w"> </span><span class="nx">events</span><span class="p">[:],</span><span class="w"> </span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="nx">e</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">			</span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;epoll_wait: &#34;</span><span class="p">,</span><span class="w"> </span><span class="nx">e</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">			</span><span class="k">break</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="k">for</span><span class="w"> </span><span class="nx">ev</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="nx">ev</span><span class="w"> </span><span class="p">&lt;</span><span class="w"> </span><span class="nx">nevents</span><span class="p">;</span><span class="w"> </span><span class="nx">ev</span><span class="o">++</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="c1">// 如果是监听端口有事件发生（有新的连接请求）</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">			</span><span class="k">if</span><span class="w"> </span><span class="nb">int</span><span class="p">(</span><span class="nx">events</span><span class="p">[</span><span class="nx">ev</span><span class="p">].</span><span class="nx">Fd</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nx">fd</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">				</span><span class="nx">connFd</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">syscall</span><span class="p">.</span><span class="nf">Accept</span><span class="p">(</span><span class="nx">fd</span><span class="p">)</span><span class="w"> </span><span class="c1">// 接收新的连接</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">				</span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">					</span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;accept: &#34;</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">					</span><span class="k">continue</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">				</span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">				</span><span class="nx">syscall</span><span class="p">.</span><span class="nf">SetNonblock</span><span class="p">(</span><span class="nx">fd</span><span class="p">,</span><span class="w"> </span><span class="kc">true</span><span class="p">)</span><span class="w"> </span><span class="c1">// 设置非阻塞</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">				</span><span class="nx">event</span><span class="p">.</span><span class="nx">Events</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">syscall</span><span class="p">.</span><span class="nx">EPOLLIN</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="nx">EPOLLET</span><span class="w"> </span><span class="c1">// 设置事件类型</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">				</span><span class="nx">event</span><span class="p">.</span><span class="nx">Fd</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">int32</span><span class="p">(</span><span class="nx">connFd</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">				</span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">syscall</span><span class="p">.</span><span class="nf">EpollCtl</span><span class="p">(</span><span class="nx">epfd</span><span class="p">,</span><span class="w"> </span><span class="nx">syscall</span><span class="p">.</span><span class="nx">EPOLL_CTL_ADD</span><span class="p">,</span><span class="w"> </span><span class="nx">connFd</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">event</span><span class="p">);</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">					</span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Print</span><span class="p">(</span><span class="s">&#34;epoll_ctl: &#34;</span><span class="p">,</span><span class="w"> </span><span class="nx">connFd</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">					</span><span class="nx">os</span><span class="p">.</span><span class="nf">Exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="c1">// 读事件</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// 处理输入</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">				</span><span class="k">go</span><span class="w"> </span><span class="nf">echo</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nx">events</span><span class="p">[</span><span class="nx">ev</span><span class="p">].</span><span class="nx">Fd</span><span class="p">))</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">			</span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span></code></pre></div><h2 id="总结">总结</h2>
+<p>go语言的net包的编程模型是Connect Per Goroutine,在易用性和性能之间做了取舍，虽然性能不是顶尖，但是适用于大多数场景且编程简单。<br>
+如果想尝试一下其它的编程模型，可以使用syscall包编写自己感兴趣的模型。<br>
+<strong>注意</strong>：由于window和Linux的网络接口不同,编写多系统通用的网络库要注意底层的不同调用。</p>
+<h2 id="参考">参考</h2>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>1</mn></mrow><annotation encoding="application/x-tex">1</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">1</span></span></span></span></span><p> <a href="https://colobu.com/2017/11/29/event-loop-networking-in-Go/">smallnest . Go语言中实现基于 event-loop 网络处理</a><br>
+</p>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>1</mn></mrow><annotation encoding="application/x-tex">1</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">1</span></span></span></span></span><p> <a href="https://www.jianshu.com/p/111adfe8c686">旅行之间 . Linux 网络编程基础</a></p>
+        </div>
+    </article>
+
+  
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    
+    const headings = document.querySelectorAll('.article-content h2, .article-content h3, .article-content h4, .article-content h5, .article-content h6');
+    if (headings.length === 0) {
+        document.querySelector('.toc-container').style.display = 'none';
+        return;
+    }
+
+    const toc = document.getElementById('table-of-contents');
+
+    
+    const tocList = document.createElement('ul');
+    tocList.className = 'toc-list';
+    toc.appendChild(tocList);
+
+    headings.forEach((heading, index) => {
+        
+        const level = parseInt(heading.tagName.charAt(1));
+
+        
+        if (!heading.id) {
+            heading.id = 'heading-' + index;
+        }
+
+        
+        const link = document.createElement('a');
+        link.href = '#' + heading.id;
+        link.textContent = heading.textContent;
+        link.className = 'toc-link';
+
+        
+        const li = document.createElement('li');
+        li.className = 'toc-item';
+        li.appendChild(link);
+
+        
+        li.classList.add('toc-level-' + level);
+
+        
+        tocList.appendChild(li);
+
+        
+        const anchor = document.createElement('a');
+        anchor.className = 'heading-anchor';
+        anchor.href = '#' + heading.id;
+        anchor.innerHTML = '#';
+        anchor.style.marginLeft = '0.5rem';
+        anchor.style.opacity = '0';
+        anchor.style.transition = 'opacity 0.2s';
+        anchor.style.textDecoration = 'none';
+        anchor.style.color = 'var(--light-link)';
+        heading.style.position = 'relative';
+        heading.appendChild(anchor);
+
+        
+        heading.addEventListener('mouseenter', function() {
+            anchor.style.opacity = '1';
+        });
+        heading.addEventListener('mouseleave', function() {
+            anchor.style.opacity = '0';
+        });
+    });
+
+    
+    function highlightTocOnScroll() {
+        const tocLinks = document.querySelectorAll('.toc-link');
+        let currentActive = null;
+
+        
+        for (let i = headings.length - 1; i >= 0; i--) {
+            const heading = headings[i];
+            const rect = heading.getBoundingClientRect();
+            if (rect.top <= 150) { 
+                currentActive = heading.id;
+                break;
+            }
+        }
+
+        
+        tocLinks.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('href') === '#' + currentActive) {
+                link.classList.add('active');
+
+                
+                const tocContainer = document.querySelector('.toc-container');
+                const linkRect = link.getBoundingClientRect();
+                const containerRect = tocContainer.getBoundingClientRect();
+
+                if (linkRect.bottom > containerRect.bottom || linkRect.top < containerRect.top) {
+                    link.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        });
+    }
+
+    
+    window.addEventListener('scroll', highlightTocOnScroll);
+    highlightTocOnScroll(); 
+
+    
+    document.querySelectorAll('.toc-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const targetId = this.getAttribute('href');
+            const targetElement = document.querySelector(targetId);
+            if (targetElement) {
+                const headerHeight = document.querySelector('.sidebar').offsetHeight;
+                const targetPosition = targetElement.offsetTop - headerHeight - 20;
+
+                window.scrollTo({
+                    top: targetPosition,
+                    behavior: 'smooth'
+                });
+
+                
+                history.pushState(null, null, targetId);
+            }
+        });
+    });
+});
+</script>
+
+            <footer class="content-footer">
+                <p>&copy; 2026 Haunanz. Powered by <a href="https://gohugo.io">Hugo</a>.</p>
+            </footer>
+        </main>
+    </div>
+
+    
+    <script src="/js/codeblock.js"></script>
+</body>
+</html>

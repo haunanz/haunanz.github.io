@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-cn" class="light-theme">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Go语言切片截断导致内存泄露 | 居然是你的的博客呀</title>
+    <meta name="description" content="居然是你的的博客呀">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/syntax.css">
+    <link rel="stylesheet" href="/css/toc.css">
+    <link rel="stylesheet" href="/css/content.css">
+    <script>
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const themeToggle = document.getElementById('theme-toggle');
+            if (themeToggle) {
+                themeToggle.addEventListener('click', function() {
+                    const html = document.documentElement;
+                    if (html.classList.contains('light-theme')) {
+                        html.classList.remove('light-theme');
+                        html.classList.add('dark-theme');
+                        localStorage.setItem('theme', 'dark');
+                    } else {
+                        html.classList.remove('dark-theme');
+                        html.classList.add('light-theme');
+                        localStorage.setItem('theme', 'light');
+                    }
+                });
+            }
+
+            
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.classList.remove('light-theme', 'dark-theme');
+            document.documentElement.classList.add(savedTheme + '-theme');
+        });
+    </script>
+</head>
+<body>
+    <div class="container">
+        
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="https://haunanz.github.io/" class="blog-title">居然是你的的博客呀</a>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    
+                    <li><a href="/posts/" >所有文章</a></li>
+                    
+                    <li><a href="/tags/" >标签</a></li>
+                    
+                    <li><a href="/categories/" >分类</a></li>
+                    
+                    <li><a href="/about/" >关于</a></li>
+                    
+                </ul>
+                <div class="theme-switcher">
+                    <button id="theme-toggle" aria-label="切换主题">
+                        <span class="theme-icon">🌓</span>
+                    </button>
+                </div>
+            </nav>
+        </aside>
+
+        
+        <main class="content">
+            
+<div class="article-wrapper">
+    
+    <div class="toc-container">
+        <div class="toc-header">目录</div>
+        <nav id="table-of-contents" class="toc" aria-label="文章目录">
+            
+        </nav>
+    </div>
+
+    <article class="article">
+        <header class="article-header">
+            <h1 class="article-title">Go语言切片截断导致内存泄露</h1>
+            <div class="article-meta">
+                <time datetime="2020-09-26T16:19:25&#43;08:00">2020-09-26</time>
+                
+                <div class="tags" style="display: inline-block; margin-left: 1rem;">
+                    
+                    <a href="/tags/go%E8%AF%AD%E8%A8%80" class="tag">GO语言</a>
+                    
+                </div>
+                
+            </div>
+        </header>
+        <div class="article-content">
+            <h2 id="引言">引言</h2>
+<p>go与语言在使用切片截断时，底层数组没有改变，依然持有指向堆内存的指针，导致内存无法释放。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// 示例</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">type</span><span class="w"> </span><span class="nx">Node</span><span class="w"> </span><span class="p">[</span><span class="mi">100</span><span class="p">]</span><span class="kt">byte</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nx">data</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="p">[]</span><span class="o">*</span><span class="nx">Node</span><span class="p">{}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">for</span><span class="w"> </span><span class="nx">i</span><span class="o">:=</span><span class="mi">10</span><span class="p">;</span><span class="w"> </span><span class="nx">i</span><span class="p">&lt;</span><span class="mi">10</span><span class="p">;</span><span class="w"> </span><span class="nx">i</span><span class="o">++</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nx">tmp</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">Node</span><span class="p">{}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nx">data</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">append</span><span class="p">(</span><span class="nx">data</span><span class="p">,</span><span class="nx">tmp</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nx">data</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">data</span><span class="p">[:</span><span class="nb">len</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="c1">// 此时由于底层数组没有改变 所以内存不会释放</span><span class="w">
+</span></span></span></code></pre></div><h2 id="切片的数据结构">切片的数据结构</h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">type</span><span class="w"> </span><span class="nx">arr</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">   </span><span class="nx">Data</span><span class="w"> </span><span class="nx">unsafe</span><span class="p">.</span><span class="nx">Pointer</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">   </span><span class="nx">Len</span><span class="w">  </span><span class="kt">int</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">   </span><span class="nx">Cap</span><span class="w">  </span><span class="kt">int</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span></code></pre></div><p>切片截断只是改变了Len字段，并没有改变底层数组。</p>
+<h2 id="解决方法">解决方法</h2>
+<p>解决方法，是在截断前手动置空。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="nx">data</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">]=</span><span class="kc">nil</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nx">data</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">data</span><span class="p">[:</span><span class="nb">len</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="w">
+</span></span></span></code></pre></div>
+        </div>
+    </article>
+
+  
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    
+    const headings = document.querySelectorAll('.article-content h2, .article-content h3, .article-content h4, .article-content h5, .article-content h6');
+    if (headings.length === 0) {
+        document.querySelector('.toc-container').style.display = 'none';
+        return;
+    }
+
+    const toc = document.getElementById('table-of-contents');
+
+    
+    const tocList = document.createElement('ul');
+    tocList.className = 'toc-list';
+    toc.appendChild(tocList);
+
+    headings.forEach((heading, index) => {
+        
+        const level = parseInt(heading.tagName.charAt(1));
+
+        
+        if (!heading.id) {
+            heading.id = 'heading-' + index;
+        }
+
+        
+        const link = document.createElement('a');
+        link.href = '#' + heading.id;
+        link.textContent = heading.textContent;
+        link.className = 'toc-link';
+
+        
+        const li = document.createElement('li');
+        li.className = 'toc-item';
+        li.appendChild(link);
+
+        
+        li.classList.add('toc-level-' + level);
+
+        
+        tocList.appendChild(li);
+
+        
+        const anchor = document.createElement('a');
+        anchor.className = 'heading-anchor';
+        anchor.href = '#' + heading.id;
+        anchor.innerHTML = '#';
+        anchor.style.marginLeft = '0.5rem';
+        anchor.style.opacity = '0';
+        anchor.style.transition = 'opacity 0.2s';
+        anchor.style.textDecoration = 'none';
+        anchor.style.color = 'var(--light-link)';
+        heading.style.position = 'relative';
+        heading.appendChild(anchor);
+
+        
+        heading.addEventListener('mouseenter', function() {
+            anchor.style.opacity = '1';
+        });
+        heading.addEventListener('mouseleave', function() {
+            anchor.style.opacity = '0';
+        });
+    });
+
+    
+    function highlightTocOnScroll() {
+        const tocLinks = document.querySelectorAll('.toc-link');
+        let currentActive = null;
+
+        
+        for (let i = headings.length - 1; i >= 0; i--) {
+            const heading = headings[i];
+            const rect = heading.getBoundingClientRect();
+            if (rect.top <= 150) { 
+                currentActive = heading.id;
+                break;
+            }
+        }
+
+        
+        tocLinks.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('href') === '#' + currentActive) {
+                link.classList.add('active');
+
+                
+                const tocContainer = document.querySelector('.toc-container');
+                const linkRect = link.getBoundingClientRect();
+                const containerRect = tocContainer.getBoundingClientRect();
+
+                if (linkRect.bottom > containerRect.bottom || linkRect.top < containerRect.top) {
+                    link.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        });
+    }
+
+    
+    window.addEventListener('scroll', highlightTocOnScroll);
+    highlightTocOnScroll(); 
+
+    
+    document.querySelectorAll('.toc-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const targetId = this.getAttribute('href');
+            const targetElement = document.querySelector(targetId);
+            if (targetElement) {
+                const headerHeight = document.querySelector('.sidebar').offsetHeight;
+                const targetPosition = targetElement.offsetTop - headerHeight - 20;
+
+                window.scrollTo({
+                    top: targetPosition,
+                    behavior: 'smooth'
+                });
+
+                
+                history.pushState(null, null, targetId);
+            }
+        });
+    });
+});
+</script>
+
+            <footer class="content-footer">
+                <p>&copy; 2026 Haunanz. Powered by <a href="https://gohugo.io">Hugo</a>.</p>
+            </footer>
+        </main>
+    </div>
+
+    
+    <script src="/js/codeblock.js"></script>
+</body>
+</html>

@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="zh-cn" class="light-theme">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Go语言Linux网络编程 使用原始套接字 | 居然是你的的博客呀</title>
+    <meta name="description" content="居然是你的的博客呀">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/syntax.css">
+    <link rel="stylesheet" href="/css/toc.css">
+    <link rel="stylesheet" href="/css/content.css">
+    <script>
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const themeToggle = document.getElementById('theme-toggle');
+            if (themeToggle) {
+                themeToggle.addEventListener('click', function() {
+                    const html = document.documentElement;
+                    if (html.classList.contains('light-theme')) {
+                        html.classList.remove('light-theme');
+                        html.classList.add('dark-theme');
+                        localStorage.setItem('theme', 'dark');
+                    } else {
+                        html.classList.remove('dark-theme');
+                        html.classList.add('light-theme');
+                        localStorage.setItem('theme', 'light');
+                    }
+                });
+            }
+
+            
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.classList.remove('light-theme', 'dark-theme');
+            document.documentElement.classList.add(savedTheme + '-theme');
+        });
+    </script>
+</head>
+<body>
+    <div class="container">
+        
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="https://haunanz.github.io/" class="blog-title">居然是你的的博客呀</a>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    
+                    <li><a href="/posts/" >所有文章</a></li>
+                    
+                    <li><a href="/tags/" >标签</a></li>
+                    
+                    <li><a href="/categories/" >分类</a></li>
+                    
+                    <li><a href="/about/" >关于</a></li>
+                    
+                </ul>
+                <div class="theme-switcher">
+                    <button id="theme-toggle" aria-label="切换主题">
+                        <span class="theme-icon">🌓</span>
+                    </button>
+                </div>
+            </nav>
+        </aside>
+
+        
+        <main class="content">
+            
+<div class="article-wrapper">
+    
+    <div class="toc-container">
+        <div class="toc-header">目录</div>
+        <nav id="table-of-contents" class="toc" aria-label="文章目录">
+            
+        </nav>
+    </div>
+
+    <article class="article">
+        <header class="article-header">
+            <h1 class="article-title">Go语言Linux网络编程 使用原始套接字</h1>
+            <div class="article-meta">
+                <time datetime="2020-10-26T16:19:25&#43;08:00">2020-10-26</time>
+                
+                <div class="tags" style="display: inline-block; margin-left: 1rem;">
+                    
+                    <a href="/tags/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B" class="tag">网络编程</a>
+                    
+                    <a href="/tags/go%E8%AF%AD%E8%A8%80" class="tag">GO语言</a>
+                    
+                </div>
+                
+            </div>
+        </header>
+        <div class="article-content">
+            <h1 id="同时监听tcp和udp">同时监听TCP和UDP</h1>
+<p>面试常见题，是否可以在一个linux的网络端口同时处理TCP和UDP。<br>
+常间的同时处理TCP和UDP的程序有超级服务inetd 和安卓的调试服务 adbd。</p>
+<p>一个套接字只能绑定一个端口，如果一个端口要同时处理两种服务，就要申请两个套接字来监听一个端口。一个流式套接字，一个数据报套接字。</p>
+<h2 id="示例">示例</h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kn">package</span><span class="w"> </span><span class="nx">main</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kn">import</span><span class="w"> </span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="s">&#34;fmt&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="s">&#34;io&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="s">&#34;log&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="s">&#34;net&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="s">&#34;os&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 错误处理</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">func</span><span class="w"> </span><span class="nf">doErr</span><span class="p">(</span><span class="nx">err</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="nx">log</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="nx">os</span><span class="p">.</span><span class="nf">Exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 处理tcp</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">func</span><span class="w"> </span><span class="nf">handle</span><span class="p">(</span><span class="nx">conn</span><span class="w"> </span><span class="nx">net</span><span class="p">.</span><span class="nx">Conn</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="k">defer</span><span class="w"> </span><span class="nx">conn</span><span class="p">.</span><span class="nf">Close</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="kd">var</span><span class="w"> </span><span class="nx">buf</span><span class="w"> </span><span class="p">[</span><span class="mi">125</span><span class="p">]</span><span class="kt">byte</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="k">for</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="nx">n</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">conn</span><span class="p">.</span><span class="nf">Read</span><span class="p">(</span><span class="nx">buf</span><span class="p">[:])</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nx">io</span><span class="p">.</span><span class="nx">EOF</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">			</span><span class="k">break</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">			</span><span class="nf">doErr</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">conn</span><span class="p">.</span><span class="nf">Write</span><span class="p">(</span><span class="nx">buf</span><span class="p">[:</span><span class="nx">n</span><span class="p">])</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="nf">doErr</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">func</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c1">// tcp listen</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="nx">tcpListen</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">net</span><span class="p">.</span><span class="nf">Listen</span><span class="p">(</span><span class="s">&#34;tcp&#34;</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;:8086&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="nf">doErr</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="k">defer</span><span class="w"> </span><span class="nx">tcpListen</span><span class="p">.</span><span class="nf">Close</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c1">// udp listen</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="nx">udpAddr</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">net</span><span class="p">.</span><span class="nf">ResolveUDPAddr</span><span class="p">(</span><span class="s">&#34;udp&#34;</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;:8086&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="kd">var</span><span class="w"> </span><span class="nx">udpListen</span><span class="w"> </span><span class="o">*</span><span class="nx">net</span><span class="p">.</span><span class="nx">UDPConn</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="nx">udpListen</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">net</span><span class="p">.</span><span class="nf">ListenUDP</span><span class="p">(</span><span class="s">&#34;udp&#34;</span><span class="p">,</span><span class="w"> </span><span class="nx">udpAddr</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="nf">doErr</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="k">defer</span><span class="w"> </span><span class="nx">udpListen</span><span class="p">.</span><span class="nf">Close</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c1">// 处理 udp </span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="k">go</span><span class="w"> </span><span class="kd">func</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="k">for</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">			</span><span class="kd">var</span><span class="w"> </span><span class="nx">buf</span><span class="w"> </span><span class="p">[</span><span class="mi">125</span><span class="p">]</span><span class="kt">byte</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">			</span><span class="nx">n</span><span class="p">,</span><span class="w"> </span><span class="nx">addr</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">udpListen</span><span class="p">.</span><span class="nf">ReadFromUDP</span><span class="p">(</span><span class="nx">buf</span><span class="p">[:])</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">			</span><span class="nf">doErr</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">			</span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">udpListen</span><span class="p">.</span><span class="nf">WriteToUDP</span><span class="p">(</span><span class="nx">buf</span><span class="p">[:</span><span class="nx">n</span><span class="p">],</span><span class="w"> </span><span class="nx">addr</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">			</span><span class="nf">doErr</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="p">}()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c1">// 处理 tcp</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="k">for</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="nx">conn</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">tcpListen</span><span class="p">.</span><span class="nf">Accept</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="k">go</span><span class="w"> </span><span class="nf">handle</span><span class="p">(</span><span class="nx">conn</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span></code></pre></div><p><strong>测试：</strong> <code>$ nc 0.0.0.0 8086 # tcp测试</code><br>
+<code>$ echo &quot;some message&quot; | nc -4u 0.0.0.0 8086 # upd测试</code></p>
+<h2 id="参考">参考</h2>
+<blockquote>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>1</mn></mrow><annotation encoding="application/x-tex">1</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">1</span></span></span></span></span><p> 游双-Linux高性能服务器编程-机械工业出版社</p>
+</blockquote>
+
+        </div>
+    </article>
+
+  
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    
+    const headings = document.querySelectorAll('.article-content h2, .article-content h3, .article-content h4, .article-content h5, .article-content h6');
+    if (headings.length === 0) {
+        document.querySelector('.toc-container').style.display = 'none';
+        return;
+    }
+
+    const toc = document.getElementById('table-of-contents');
+
+    
+    const tocList = document.createElement('ul');
+    tocList.className = 'toc-list';
+    toc.appendChild(tocList);
+
+    headings.forEach((heading, index) => {
+        
+        const level = parseInt(heading.tagName.charAt(1));
+
+        
+        if (!heading.id) {
+            heading.id = 'heading-' + index;
+        }
+
+        
+        const link = document.createElement('a');
+        link.href = '#' + heading.id;
+        link.textContent = heading.textContent;
+        link.className = 'toc-link';
+
+        
+        const li = document.createElement('li');
+        li.className = 'toc-item';
+        li.appendChild(link);
+
+        
+        li.classList.add('toc-level-' + level);
+
+        
+        tocList.appendChild(li);
+
+        
+        const anchor = document.createElement('a');
+        anchor.className = 'heading-anchor';
+        anchor.href = '#' + heading.id;
+        anchor.innerHTML = '#';
+        anchor.style.marginLeft = '0.5rem';
+        anchor.style.opacity = '0';
+        anchor.style.transition = 'opacity 0.2s';
+        anchor.style.textDecoration = 'none';
+        anchor.style.color = 'var(--light-link)';
+        heading.style.position = 'relative';
+        heading.appendChild(anchor);
+
+        
+        heading.addEventListener('mouseenter', function() {
+            anchor.style.opacity = '1';
+        });
+        heading.addEventListener('mouseleave', function() {
+            anchor.style.opacity = '0';
+        });
+    });
+
+    
+    function highlightTocOnScroll() {
+        const tocLinks = document.querySelectorAll('.toc-link');
+        let currentActive = null;
+
+        
+        for (let i = headings.length - 1; i >= 0; i--) {
+            const heading = headings[i];
+            const rect = heading.getBoundingClientRect();
+            if (rect.top <= 150) { 
+                currentActive = heading.id;
+                break;
+            }
+        }
+
+        
+        tocLinks.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('href') === '#' + currentActive) {
+                link.classList.add('active');
+
+                
+                const tocContainer = document.querySelector('.toc-container');
+                const linkRect = link.getBoundingClientRect();
+                const containerRect = tocContainer.getBoundingClientRect();
+
+                if (linkRect.bottom > containerRect.bottom || linkRect.top < containerRect.top) {
+                    link.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        });
+    }
+
+    
+    window.addEventListener('scroll', highlightTocOnScroll);
+    highlightTocOnScroll(); 
+
+    
+    document.querySelectorAll('.toc-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const targetId = this.getAttribute('href');
+            const targetElement = document.querySelector(targetId);
+            if (targetElement) {
+                const headerHeight = document.querySelector('.sidebar').offsetHeight;
+                const targetPosition = targetElement.offsetTop - headerHeight - 20;
+
+                window.scrollTo({
+                    top: targetPosition,
+                    behavior: 'smooth'
+                });
+
+                
+                history.pushState(null, null, targetId);
+            }
+        });
+    });
+});
+</script>
+
+            <footer class="content-footer">
+                <p>&copy; 2026 Haunanz. Powered by <a href="https://gohugo.io">Hugo</a>.</p>
+            </footer>
+        </main>
+    </div>
+
+    
+    <script src="/js/codeblock.js"></script>
+</body>
+</html>

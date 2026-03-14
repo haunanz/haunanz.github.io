@@ -1,0 +1,308 @@
+/* 搜索功能样式 */
+
+/* 搜索框样式 */
+.search-box {
+    margin: 0 1rem;
+    position: relative;
+    flex: 1;
+    max-width: 300px;
+    min-width: 150px;
+}
+
+.search-box form {
+    display: flex;
+    width: 100%;
+    margin: 0;
+}
+
+#search-input,
+#search-page-input {
+    flex: 1;
+    padding: 0.6rem 1rem;
+    font-size: 0.95rem;
+    border: 1px solid var(--light-border);
+    border-radius: 4px 0 0 4px;
+    background-color: var(--light-sidebar-bg);
+    color: var(--light-text);
+    transition: border-color 0.2s, background-color 0.3s, color 0.3s;
+}
+
+.dark-theme #search-input,
+.dark-theme #search-page-input {
+    border-color: var(--dark-border);
+    background-color: var(--dark-sidebar-bg);
+    color: var(--dark-text);
+}
+
+#search-input:focus,
+#search-page-input:focus {
+    outline: none;
+    border-color: var(--light-link);
+    box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.1);
+}
+
+.dark-theme #search-input:focus,
+.dark-theme #search-page-input:focus {
+    border-color: var(--dark-link);
+    box-shadow: 0 0 0 2px rgba(102, 170, 255, 0.2);
+}
+
+.search-box button,
+.search-page-form button {
+    padding: 0.6rem 1.2rem;
+    background-color: var(--light-link);
+    color: white;
+    border: 1px solid var(--light-link);
+    border-radius: 0 4px 4px 0;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.dark-theme .search-box button,
+.dark-theme .search-page-form button {
+    background-color: var(--dark-link);
+    border-color: var(--dark-link);
+    color: var(--dark-bg);
+}
+
+.search-box button:hover,
+.search-page-form button:hover {
+    background-color: var(--light-link-hover);
+    border-color: var(--light-link-hover);
+}
+
+.dark-theme .search-box button:hover,
+.dark-theme .search-page-form button:hover {
+    background-color: var(--dark-link-hover);
+    border-color: var(--dark-link-hover);
+}
+
+/* 搜索结果下拉框样式 */
+.search-results {
+    position: absolute;
+    top: calc(100% + 5px);
+    left: 1.5rem;
+    right: 1.5rem;
+    background-color: var(--light-sidebar-bg);
+    border: 1px solid var(--light-border);
+    border-radius: 4px;
+    box-shadow: 0 4px 12px var(--light-shadow);
+    max-height: 400px;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none;
+}
+
+.dark-theme .search-results {
+    background-color: var(--dark-sidebar-bg);
+    border-color: var(--dark-border);
+    box-shadow: 0 4px 12px var(--dark-shadow);
+}
+
+.results-header {
+    padding: 0.8rem 1rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--light-text-secondary);
+    border-bottom: 1px solid var(--light-border);
+}
+
+.dark-theme .results-header {
+    color: var(--dark-text-secondary);
+    border-bottom-color: var(--dark-border);
+}
+
+/* 搜索结果项样式 */
+.search-result-item {
+    padding: 1rem;
+    border-bottom: 1px solid var(--light-border);
+    transition: background-color 0.2s;
+}
+
+.dark-theme .search-result-item {
+    border-bottom-color: var(--dark-border);
+}
+
+.search-result-item:last-child {
+    border-bottom: none;
+}
+
+.search-result-item:hover {
+    background-color: rgba(0, 102, 204, 0.05);
+}
+
+.dark-theme .search-result-item:hover {
+    background-color: rgba(102, 170, 255, 0.1);
+}
+
+.result-title {
+    display: block;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--light-link);
+    text-decoration: none;
+    margin-bottom: 0.3rem;
+    transition: color 0.2s;
+}
+
+.dark-theme .result-title {
+    color: var(--dark-link);
+}
+
+.result-title:hover {
+    color: var(--light-link-hover);
+    text-decoration: underline;
+}
+
+.dark-theme .result-title:hover {
+    color: var(--dark-link-hover);
+}
+
+.result-meta {
+    font-size: 0.85rem;
+    color: var(--light-text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.dark-theme .result-meta {
+    color: var(--dark-text-secondary);
+}
+
+.result-date {
+    display: inline-block;
+}
+
+.result-summary {
+    font-size: 0.95rem;
+    color: var(--light-text);
+    line-height: 1.5;
+    margin: 0.5rem 0;
+}
+
+.dark-theme .result-summary {
+    color: var(--dark-text);
+}
+
+/* 标签样式 */
+.post-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    margin-top: 0.5rem;
+}
+
+.post-tags .tag {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.75rem;
+    background-color: var(--light-tag-bg);
+    color: var(--light-tag-text);
+    border-radius: 12px;
+    text-decoration: none;
+}
+
+.dark-theme .post-tags .tag {
+    background-color: var(--dark-tag-bg);
+    color: var(--dark-tag-text);
+}
+
+/* 无结果提示 */
+.no-results {
+    padding: 1.5rem;
+    text-align: center;
+    color: var(--light-text-secondary);
+    font-style: italic;
+}
+
+.dark-theme .no-results {
+    color: var(--dark-text-secondary);
+}
+
+/* 搜索页面样式 */
+.search-page {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+.search-page h1 {
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+    color: var(--light-text);
+}
+
+.dark-theme .search-page h1 {
+    color: var(--dark-text);
+}
+
+.search-container {
+    margin-top: 2rem;
+}
+
+.search-page-form {
+    display: flex;
+    margin-bottom: 2rem;
+}
+
+#search-page-input {
+    flex: 1;
+    padding: 0.8rem 1.2rem;
+    font-size: 1.1rem;
+    border-radius: 6px 0 0 6px;
+}
+
+.search-page-form button {
+    padding: 0.8rem 2rem;
+    font-size: 1.1rem;
+    border-radius: 0 6px 6px 0;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .search-box {
+        margin: 0 0.5rem;
+        max-width: 200px;
+        min-width: 120px;
+    }
+
+    .search-results {
+        left: 0.5rem;
+        right: 0.5rem;
+    }
+
+    .search-page {
+        padding: 1.5rem 1rem;
+    }
+
+    .search-page h1 {
+        font-size: 1.6rem;
+    }
+
+    #search-page-input {
+        padding: 0.7rem 1rem;
+        font-size: 1rem;
+    }
+
+    .search-page-form button {
+        padding: 0.7rem 1.5rem;
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .search-box {
+        max-width: 150px;
+        min-width: 100px;
+    }
+
+    #search-input {
+        padding: 0.5rem 0.7rem;
+        font-size: 0.9rem;
+    }
+
+    .search-box button {
+        padding: 0.5rem 0.8rem;
+        font-size: 0.9rem;
+    }
+}
